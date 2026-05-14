@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Background</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #0a0a0c;
+  }
+  .stage {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    /* base — flat dark with subtle vignette pulling toward edges */
+    background:
+      radial-gradient(ellipse 90% 70% at 50% 50%, #0a0a0d 0%, #07070a 60%, #050507 100%),
+      #06060a;
+  }
+  /* faint directional glows at corners, NOT center */
+  .glow {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 10% 10%, rgba(80, 100, 140, 0.04) 0%, transparent 40%),
+      radial-gradient(circle at 90% 90%, rgba(80, 90, 130, 0.035) 0%, transparent 45%);
+    pointer-events: none;
+  }
+  /* faint grain */
+  .grain {
+    position: absolute;
+    inset: 0;
+    opacity: 0.025;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+  canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <canvas id="particles"></canvas>
+    <div class="glow"></div>
+    <div class="grain"></div>
+  </div>
+
+<script>
+(function () {
+  const canvas = document.getElementById('particles');
+  const ctx = canvas.getContext('2d');
+  let W, H, dpr;
+  let particles = [];
+
+  // density tuned for a 1920x1080 reference; scales with area
+  const REF_AREA = 1920 * 1080;
+  const TARGET_COUNT = 180;
+  const LINK_DIST = 130;
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = canvas.clientWidth;
+    H = canvas.clientHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const count = Math.round(TARGET_COUNT * (W * H) / REF_AREA);
+    if (particles.length !== count) initParticles(count);
+  }
+
+  function rand(a, b) { return a + Math.random() * (b - a); }
+
+  function initParticles(count) {
+    particles = [];
+    for (let i = 0; i < count; i++) {
+      const isNode = Math.random() < 0.18; // a few brighter "nodes"
+      particles.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        r: isNode ? rand(1.2, 1.8) : rand(0.5, 1.1),
+        vx: rand(-0.12, 0.12),
+        vy: rand(-0.10, 0.10),
+        a: isNode ? rand(0.16, 0.24) : rand(0.05, 0.12),
+        phase: Math.random() * Math.PI * 2,
+        speed: rand(0.0006, 0.0020),
+        // cool palette — subtle blue/cyan shift
+        hue: rand(195, 225),
+        isNode,
+      });
+    }
+  }
+
+  function tick(t) {
+    ctx.clearRect(0, 0, W, H);
+
+    // update positions first
+    for (const p of particles) {
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.x < -5) p.x = W + 5;
+      if (p.x > W + 5) p.x = -5;
+      if (p.y < -5) p.y = H + 5;
+      if (p.y > H + 5) p.y = -5;
+    }
+
+    // thin connecting lines between near particles — futuristic network feel
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i < particles.length; i++) {
+      const a = particles[i];
+      for (let j = i + 1; j < particles.length; j++) {
+        const b = particles[j];
+        const dx = a.x - b.x;
+        const dy = a.y - b.y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 < LINK_DIST * LINK_DIST) {
+          const d = Math.sqrt(d2);
+          const alpha = (1 - d / LINK_DIST) * 0.06; // extremely soft
+          ctx.strokeStyle = `hsla(${(a.hue + b.hue) / 2}, 30%, 75%, ${alpha})`;
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // draw particles
+    for (const p of particles) {
+      const twinkle = 0.5 + 0.5 * Math.sin(p.phase + t * p.speed);
+      const alpha = p.a * (0.65 + 0.35 * twinkle);
+      const radius = p.r * (p.isNode ? 5 : 3.5);
+
+      const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, radius);
+      g.addColorStop(0, `hsla(${p.hue}, 35%, 85%, ${alpha})`);
+      g.addColorStop(0.5, `hsla(${p.hue}, 35%, 80%, ${alpha * 0.4})`);
+      g.addColorStop(1, `hsla(${p.hue}, 35%, 80%, 0)`);
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    requestAnimationFrame(tick);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>

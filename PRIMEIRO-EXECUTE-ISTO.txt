@@ -1,0 +1,64 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                                                                            ║
+║          🚀 SISTEMA NOVO VERMELHO - AUTENTICAÇÃO POR CONVITE             ║
+║                                                                            ║
+║              ❌ DELETANDO SITE ANTIGO ROXO EM 2 PASSOS                   ║
+║                                                                            ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+⚠️ ATENÇÃO: Site antigo (roxo) está rodando na porta 3000
+✅ NOVO: Sistema vermelho com convites roda em 5173
+
+═══════════════════════════════════════════════════════════════════════════════
+PASSO 1: LIMPAR SITE ANTIGO (ROXO)
+═══════════════════════════════════════════════════════════════════════════════
+
+Duplo clique em: LIMPAR-SITE-ANTIGO.bat
+
+Este script irá:
+  ✅ Deletar vite.config.ts antigo
+  ✅ Deletar tsconfig.json antigo
+  ✅ Deletar pasta client/ (antigo)
+  ✅ Deletar pasta server/ (antigo)
+  ✅ Deletar pasta shared/ (antigo)
+  ✅ Deletar pasta node_modules/
+  ✅ Deletar pasta dist/
+
+Mantém:
+  ✓ start.bat (modificado para novo sistema)
+  ✓ outsidehub-platform-webdev/ (novo sistema vermelho)
+
+═══════════════════════════════════════════════════════════════════════════════
+PASSO 2: RODAR NOVO SISTEMA
+═══════════════════════════════════════════════════════════════════════════════
+
+Após limpar, duplo clique em: start.bat
+
+O novo sistema irá:
+  ✅ Setup automático
+  ✅ Instalar dependências
+  ✅ Iniciar em http://localhost:5173
+  ✅ Mostrar tela de LOGIN COM CONVITE
+
+═══════════════════════════════════════════════════════════════════════════════
+CÓDIGO DE ACESSO
+═══════════════════════════════════════════════════════════════════════════════
+
+Cole este código:
+  ADMIN-CAIO-2024
+
+E pronto! Você é ADMIN! 👑
+
+═══════════════════════════════════════════════════════════════════════════════
+RESUMO FINAL
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ PASSO 1: Execute LIMPAR-SITE-ANTIGO.bat
+✅ PASSO 2: Execute start.bat
+✅ PASSO 3: Navegador abre em http://localhost:5173
+✅ PASSO 4: Insira código ADMIN-CAIO-2024
+✅ PASSO 5: Clique "Acessar"
+
+PRONTO! 🎉
+
+═══════════════════════════════════════════════════════════════════════════════

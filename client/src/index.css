@@ -1,0 +1,468 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   OUTSIDEHUB — "Gang Liquid Glass" Design System
+   Dual-dark aesthetic: Crystal (default) / Oni (dark toggle)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* ── CRYSTAL MODE (Default) ─────────────────────────────────── */
+:root {
+  --radius: 0.625rem;
+
+  /* Fundos — preto profundo com leve toque azulado para refração */
+  --background:          #060608;
+  --card:                rgba(255, 255, 255, 0.025);
+  --popover:             rgba(10, 10, 14, 0.96);
+  --secondary:           rgba(255, 255, 255, 0.03);
+  --muted:               rgba(255, 255, 255, 0.035);
+  --accent:              rgba(255, 255, 255, 0.05);
+  --input:               rgba(255, 255, 255, 0.04);
+
+  /* Texto — escala de branco com legibilidade perfeita */
+  --foreground:          #e8e8ec;
+  --card-foreground:     #e8e8ec;
+  --popover-foreground:  #e8e8ec;
+  --primary:             #ffffff;
+  --primary-foreground:  #000000;
+  --secondary-foreground:#9a9aab;
+  --muted-foreground:    #5c5c72;
+  --accent-foreground:   #ffffff;
+
+  /* Sistema */
+  --destructive:         #ef4444;
+  --destructive-foreground: #fff;
+  --border:              rgba(255, 255, 255, 0.07);
+  --ring:                rgba(255, 255, 255, 0.15);
+
+  /* Liquid Glass — Crystal / Diamond */
+  --glass-bg:            rgba(255, 255, 255, 0.022);
+  --glass-border:        rgba(255, 255, 255, 0.09);
+  --glass-blur:          28px;
+  --glass-shine:         rgba(255, 255, 255, 0.12);
+  --glass-glow:          rgba(140, 160, 255, 0.06);
+
+  /* Logo — Silver / Crystal com brilho sutil */
+  --logo-filter:         drop-shadow(0 0 8px rgba(200, 210, 255, 0.2)) drop-shadow(0 0 24px rgba(140, 160, 255, 0.08));
+
+  /* Accent color para highlights */
+  --accent-hue:          220;
+  --accent-glow:         rgba(140, 160, 255, 0.15);
+}
+
+/* ── ONI MODE (Dark Toggle — Vermelho Sangue) ────────────── */
+.light {
+  --background:          #080404;
+  --card:                rgba(255, 20, 20, 0.025);
+  --popover:             rgba(12, 4, 4, 0.96);
+  --secondary:           rgba(255, 0, 0, 0.03);
+  --muted:               rgba(255, 0, 0, 0.035);
+  --accent:              rgba(255, 0, 0, 0.05);
+  --input:               rgba(255, 0, 0, 0.04);
+
+  --foreground:          #e8e0e0;
+  --card-foreground:     #e8e0e0;
+  --popover-foreground:  #e8e0e0;
+  --primary:             #ffffff;
+  --primary-foreground:  #000000;
+  --secondary-foreground:#ab8888;
+  --muted-foreground:    #6b4444;
+  --accent-foreground:   #ffffff;
+
+  --destructive:         #ff4444;
+  --destructive-foreground: #fff;
+  --border:              rgba(255, 60, 60, 0.10);
+  --ring:                rgba(255, 0, 0, 0.2);
+
+  /* Liquid Glass — Red / Obsidian */
+  --glass-bg:            rgba(255, 20, 20, 0.025);
+  --glass-border:        rgba(255, 60, 60, 0.12);
+  --glass-shine:         rgba(255, 80, 80, 0.15);
+  --glass-glow:          rgba(255, 0, 0, 0.08);
+
+  /* Logo — Red Oni com glow controlado */
+  --logo-filter:         drop-shadow(0 0 8px rgba(255, 40, 40, 0.35)) drop-shadow(0 0 24px rgba(255, 0, 0, 0.12));
+
+  --accent-hue:          0;
+  --accent-glow:         rgba(255, 40, 40, 0.15);
+}
+
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   BASE
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+@layer base {
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: "Inter", "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 13px;
+    line-height: 1.55;
+    letter-spacing: -0.01em;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    margin: 0;
+    transition: background 0.6s ease, color 0.4s ease;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* ── Ambient Refractive Glow ── 
+     Cria luzes orgânicas atrás do vidro para gerar refração real */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: -60%;
+    z-index: -1;
+    background:
+      radial-gradient(ellipse 600px 400px at 18% 45%, var(--accent-glow) 0%, transparent 70%),
+      radial-gradient(ellipse 500px 350px at 82% 25%, var(--accent-glow) 0%, transparent 70%),
+      radial-gradient(ellipse 400px 600px at 50% 85%, rgba(80, 60, 120, 0.04) 0%, transparent 60%);
+    filter: blur(80px);
+    opacity: 1;
+    animation: ambientDrift 20s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+
+  @keyframes ambientDrift {
+    0%   { transform: scale(1)    translate(0, 0);        }
+    33%  { transform: scale(1.05) translate(1.5%, -1%);   }
+    66%  { transform: scale(0.98) translate(-1%, 1.5%);   }
+    100% { transform: scale(1.03) translate(0.5%, -0.5%); }
+  }
+
+  button {
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: inherit;
+    font-family: inherit;
+  }
+
+  /* Scrollbar — invisível porém funcional */
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.14);
+  }
+
+  /* ── Selection highlight ── */
+  ::selection {
+    background: rgba(140, 160, 255, 0.2);
+    color: #fff;
+  }
+  .light ::selection {
+    background: rgba(255, 80, 80, 0.2);
+    color: #fff;
+  }
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   LIQUID GLASS SYSTEM
+   O coração visual do OUTSIDEHUB
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* Classe base para vidro pesado (sidebar, header) */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.02),
+    0 8px 32px rgba(0, 0, 0, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+
+@layer components {
+
+  /* ── Surface — cards, containers, posts ── */
+  .surface {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.03),
+      0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: transform 0.35s cubic-bezier(.22, 1, .36, 1),
+                box-shadow 0.35s ease,
+                border-color 0.35s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .surface::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, var(--glass-shine) 50%, transparent 100%);
+    opacity: 0.6;
+  }
+
+  .surface:hover {
+    transform: translateY(-1px);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      0 8px 24px rgba(0, 0, 0, 0.25),
+      0 0 0 1px var(--glass-shine);
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  /* ── Glass Dropdown ── */
+  .glass-dropdown {
+    background: rgba(12, 12, 16, 0.92);
+    backdrop-filter: blur(40px) saturate(1.8);
+    -webkit-backdrop-filter: blur(40px) saturate(1.8);
+    border: 1px solid var(--glass-border);
+    border-radius: calc(var(--radius) + 2px);
+    box-shadow:
+      0 20px 60px rgba(0, 0, 0, 0.5),
+      0 8px 20px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    overflow: hidden;
+  }
+
+  /* ── Action buttons ── */
+  .action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: -0.01em;
+    transition: all 0.25s cubic-bezier(.22, 1, .36, 1);
+    border: 1px solid var(--glass-border);
+  }
+
+  .action-solid {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--foreground);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+
+  .action-solid:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  /* ── Form fields ── */
+  .field {
+    width: 100%;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    color: var(--foreground);
+    font-family: inherit;
+    font-size: 13px;
+    letter-spacing: -0.005em;
+    outline: none;
+    transition: all 0.2s ease;
+  }
+
+  .field::placeholder {
+    color: var(--muted-foreground);
+    opacity: 0.7;
+  }
+
+  .field:focus {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  /* ── Page typography ── */
+  .page-title {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.2;
+    color: var(--foreground);
+  }
+
+  .page-sub {
+    color: var(--muted-foreground);
+    font-size: 14px;
+    font-weight: 400;
+    letter-spacing: -0.005em;
+  }
+
+  /* ── Header button ── */
+  .hdr-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    border-radius: 8px;
+    color: var(--muted-foreground);
+    transition: color 0.15s ease, background 0.15s ease;
+  }
+  .hdr-btn:hover {
+    color: var(--foreground);
+    background: rgba(255, 255, 255, 0.05);
+  }
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   ANIMATIONS & UTILITIES
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+@layer utilities {
+
+  /* Glow pulse para logos / destaques */
+  @keyframes glowPulse {
+    0%, 100% {
+      filter: var(--logo-filter) brightness(1);
+    }
+    50% {
+      filter: var(--logo-filter) brightness(1.15);
+    }
+  }
+
+  .glow-pulse {
+    animation: glowPulse 4s infinite alternate ease-in-out;
+  }
+
+  /* Spinner */
+  .spin {
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  /* Pulse opacity */
+  .pulse {
+    animation: pulse 2.5s ease-in-out infinite;
+  }
+
+  /* Skeleton loading */
+  .skeleton-pulse {
+    animation: skeletonPulse 1.5s ease-in-out infinite alternate;
+  }
+
+  @keyframes skeletonPulse {
+    0% { opacity: 0.3; }
+    100% { opacity: 0.8; }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.5; }
+  }
+
+  /* Logo breathing — elegante, não exagerada */
+  .logo-pulse {
+    animation: logoBreathe 5s ease-in-out infinite;
+  }
+
+  @keyframes logoBreathe {
+    0%, 100% {
+      transform: scale(1) translateY(0);
+      filter: var(--logo-filter) brightness(1);
+    }
+    50% {
+      transform: scale(1.02) translateY(-1px);
+      filter: var(--logo-filter) brightness(1.1);
+    }
+  }
+
+  /* Dropdown slide in */
+  .drop-in {
+    animation: dropIn 0.18s cubic-bezier(.22, 1, .36, 1);
+  }
+
+  @keyframes dropIn {
+    from {
+      opacity: 0;
+      transform: translateY(-6px) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   NAVIGATION BUTTONS (Sidebar)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.nav-btn {
+  width: calc(100% - 16px);
+  margin: 2px 8px;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  border-radius: 9px;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  transition: all 0.2s cubic-bezier(.22, 1, .36, 1);
+  border: 1px solid transparent;
+  background: transparent;
+  position: relative;
+}
+
+.nav-btn:hover {
+  color: var(--foreground);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+.nav-btn.active {
+  color: var(--foreground);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--glass-border);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 2px 8px rgba(0, 0, 0, 0.15);
+  font-weight: 600;
+}
+
+/* Indicador lateral ativo — linha luminosa */
+.nav-btn.active::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 25%;
+  height: 50%;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--glass-shine);
+  box-shadow: 0 0 6px var(--accent-glow);
+}
