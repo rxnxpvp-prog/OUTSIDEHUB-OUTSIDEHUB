@@ -3,7 +3,7 @@ import { useRoute } from "wouter";
 import api from "@/lib/api";
 import Avatar from "@/components/Avatar";
 import { ExternalLink, Globe, Instagram, Twitter, Github, Linkedin, MessageCircle, Mail, Shield, Lock, Activity, Link2, Code, Terminal } from "lucide-react";
-import Skeleton from "@/components/ui/Skeleton";
+import Skeleton from "@/components/ui/skeleton";
 
 interface PublicUser {
   id: string;
