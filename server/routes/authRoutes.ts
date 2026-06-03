@@ -11,13 +11,29 @@ import {
   type AuthRequest,
   verifyToken,
 } from "../auth.js";
+import { emitRealtime } from "../events.js";
 
 const router = Router();
 
-const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID || "";
-const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET || "";
-const DISCORD_REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || "http://localhost:3001/api/auth/discord/callback";
-const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
+function getDiscordConfig() {
+  const db = getDB();
+  const cfg = db.discordConfig;
+  const clean = (value: string | undefined, placeholder: string) => {
+    const text = String(value || "").trim();
+    return text && text !== placeholder ? text : "";
+  };
+  return {
+    clientId: clean(cfg?.clientId || process.env.DISCORD_CLIENT_ID, "your_discord_client_id"),
+    clientSecret: clean(cfg?.clientSecret || process.env.DISCORD_CLIENT_SECRET, "your_discord_client_secret"),
+    redirectUri:
+      cfg?.redirectUri ||
+      process.env.DISCORD_REDIRECT_URI ||
+      "https://www.outsidehub.com.br/api/auth/discord/callback",
+    clientUrl: cfg?.clientUrl || process.env.CLIENT_URL || "https://www.outsidehub.com.br",
+    rpcDetails: cfg?.rpcDetails || "OutsideHub",
+    rpcState: cfg?.rpcState || "Online",
+  };
+}
 
 function buildSafeUser(user: any) {
   const {
@@ -29,7 +45,19 @@ function buildSafeUser(user: any) {
     discordTokenExpiresAt,
     ...safe
   } = user;
-  return safe;
+  const db = getDB();
+  const index = db.users.findIndex((u) => u.id === user.id);
+  return {
+    ...safe,
+    accessCode: index === -1 ? "OH-000" : `OH-${String(index + 1).padStart(3, "0")}`,
+  };
+}
+
+function getDisplayRole(user: any) {
+  if (String(user?.username || "").toLowerCase() === "crema") return "CEO";
+  if (user?.role === "admin") return "ADMIN";
+  if (user?.role === "moderator") return "MODERATOR";
+  return "USUARIO";
 }
 
 async function refreshDiscordToken(user: any) {
@@ -37,9 +65,10 @@ async function refreshDiscordToken(user: any) {
     return false;
   }
 
+  const discord = getDiscordConfig();
   const body = new URLSearchParams({
-    client_id: DISCORD_CLIENT_ID,
-    client_secret: DISCORD_CLIENT_SECRET,
+    client_id: discord.clientId,
+    client_secret: discord.clientSecret,
     grant_type: "refresh_token",
     refresh_token: user.discordRefreshToken,
   });
@@ -65,10 +94,11 @@ async function refreshDiscordToken(user: any) {
 }
 
 function getDiscordOauthUrl(token: string) {
+  const discord = getDiscordConfig();
   const state = Buffer.from(token, "utf8").toString("base64url");
   const params = new URLSearchParams({
-    client_id: DISCORD_CLIENT_ID,
-    redirect_uri: DISCORD_REDIRECT_URI,
+    client_id: discord.clientId,
+    redirect_uri: discord.redirectUri,
     response_type: "code",
     scope: "identify email",
     state,
@@ -169,8 +199,17 @@ router.post("/register", async (req, res) => {
       username: trimmedUsername,
       email: `${trimmedUsername}@outsidehub.local`,
       passwordHash: await hashPassword(password),
-      role: invite.role,
-      permissions: invite.permissions || {},
+      role: "user" as const,
+      permissions: {
+        feed: true,
+        chat: true,
+        sms: false,
+        leads: false,
+        email: false,
+        search: false,
+        builders: false,
+        discord: true,
+      },
       avatar: "",
       bio: "",
       badges: [] as any[],
@@ -183,6 +222,7 @@ router.post("/register", async (req, res) => {
     db.invites[inviteIdx].usedBy = newUser.id;
 
     saveDB(db);
+    emitRealtime({ type: "users:changed", userId: newUser.id });
 
     const token = signToken({ userId: newUser.id, role: newUser.role as any });
     res.status(201).json({ token, user: buildSafeUser(newUser) });
@@ -227,7 +267,8 @@ router.get("/2fa/status", requireAuth, (req: AuthRequest, res) => {
 // GET /api/auth/discord/url
 router.get("/discord/url", requireAuth, (req: AuthRequest, res) => {
   try {
-    if (!DISCORD_CLIENT_ID || !DISCORD_CLIENT_SECRET) {
+    const discord = getDiscordConfig();
+    if (!discord.clientId || !discord.clientSecret) {
       res.status(500).json({ error: "Discord OAuth não configurado" });
       return;
     }
@@ -248,6 +289,7 @@ router.get("/discord/url", requireAuth, (req: AuthRequest, res) => {
 // GET /api/auth/discord/callback
 router.get("/discord/callback", async (req, res) => {
   try {
+    const discord = getDiscordConfig();
     const { code, state } = req.query as { code?: string; state?: string };
     if (!code || !state) {
       res.status(400).send("Parâmetros Discord inválidos");
@@ -269,11 +311,11 @@ router.get("/discord/callback", async (req, res) => {
     }
 
     const body = new URLSearchParams({
-      client_id: DISCORD_CLIENT_ID,
-      client_secret: DISCORD_CLIENT_SECRET,
+      client_id: discord.clientId,
+      client_secret: discord.clientSecret,
       grant_type: "authorization_code",
       code,
-      redirect_uri: DISCORD_REDIRECT_URI,
+      redirect_uri: discord.redirectUri,
     });
 
     const tokenRes = await axios.post("https://discord.com/api/oauth2/token", body.toString(), {
@@ -302,8 +344,9 @@ router.get("/discord/callback", async (req, res) => {
     user.discordRefreshToken = refreshToken;
     user.discordTokenExpiresAt = expiresAt;
     saveDB(db);
+    emitRealtime({ type: "users:changed", userId: user.id });
 
-    res.redirect(`${CLIENT_URL}/discord?connected=1`);
+    res.redirect(`${discord.clientUrl}/discord?connected=1`);
   } catch (err) {
     console.error("/api/auth/discord/callback", err);
     res.status(500).send("Erro ao conectar Discord");
@@ -313,6 +356,7 @@ router.get("/discord/callback", async (req, res) => {
 // GET /api/auth/discord/status
 router.get("/discord/status", requireAuth, (req: AuthRequest, res) => {
   try {
+    const discord = getDiscordConfig();
     const db = getDB();
     const user = db.users.find((u) => u.id === req.user!.userId);
     if (!user) {
@@ -320,14 +364,55 @@ router.get("/discord/status", requireAuth, (req: AuthRequest, res) => {
       return;
     }
     res.json({
+      configured: Boolean(discord.clientId && discord.clientSecret),
+      clientId: discord.clientId,
+      redirectUri: discord.redirectUri,
+      rpcDetails: discord.rpcDetails,
+      rpcState: discord.rpcState,
+      rpcName: "OUTSIDE HUB",
+      rpcUser: user.username,
+      rpcRole: getDisplayRole(user),
+      rpcPage: user.currentPage || "Online",
+      rpcPath: user.currentPath || "/",
+      lastSeen: (user as any).lastSeen,
       connected: Boolean(user.discordId),
       discordId: user.discordId,
       discordUsername: user.discordUsername,
       discordDiscriminator: user.discordDiscriminator,
       discordAvatar: user.discordAvatar,
+      rpcToken: user.rpcToken,
     });
   } catch (err) {
     console.error("/api/auth/discord/status", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+// POST /api/auth/presence
+router.post("/presence", requireAuth, (req: AuthRequest, res) => {
+  try {
+    const { page, path } = req.body ?? {};
+    const db = getDB();
+    const idx = db.users.findIndex((u) => u.id === req.user!.userId);
+    if (idx === -1) {
+      res.status(404).json({ error: "Usuario nao encontrado" });
+      return;
+    }
+
+    db.users[idx].currentPage = String(page || "Online").trim().slice(0, 80) || "Online";
+    db.users[idx].currentPath = String(path || "/").trim().slice(0, 160) || "/";
+    db.users[idx].lastSeen = new Date().toISOString();
+    saveDB(db);
+    res.json({
+      ok: true,
+      rpcName: "OUTSIDE HUB",
+      rpcUser: db.users[idx].username,
+      rpcRole: getDisplayRole(db.users[idx]),
+      rpcPage: db.users[idx].currentPage,
+      rpcPath: db.users[idx].currentPath,
+    });
+  } catch (err) {
+    console.error("/api/auth/presence", err);
     res.status(500).json({ error: "Erro interno" });
   }
 });
@@ -377,6 +462,7 @@ router.post("/discord/disconnect", requireAuth, (req: AuthRequest, res) => {
     user.discordDiscriminator = undefined;
     user.discordAvatar = undefined;
     saveDB(db);
+    emitRealtime({ type: "users:changed", userId: user.id });
     res.json({ ok: true });
   } catch (err) {
     console.error("/api/auth/discord/disconnect", err);
@@ -446,6 +532,7 @@ router.post("/2fa/confirm", requireAuth, (req: AuthRequest, res) => {
     user.twoFactorTempSecret = undefined;
     user.twoFactorEnabled = true;
     saveDB(db);
+    emitRealtime({ type: "users:changed", userId: user.id });
     res.json({ ok: true });
   } catch (err) {
     console.error("/api/auth/2fa/confirm", err);
@@ -479,6 +566,7 @@ router.post("/2fa/disable", requireAuth, async (req: AuthRequest, res) => {
     user.twoFactorSecret = undefined;
     user.twoFactorTempSecret = undefined;
     saveDB(db);
+    emitRealtime({ type: "users:changed", userId: user.id });
     res.json({ ok: true });
   } catch (err) {
     console.error("/api/auth/2fa/disable", err);
@@ -526,6 +614,7 @@ router.put("/profile", requireAuth, async (req: AuthRequest, res) => {
     }
     
     saveDB(db);
+    emitRealtime({ type: "users:changed", userId: db.users[idx].id });
     res.json(buildSafeUser(db.users[idx]));
   } catch (err) {
     console.error("/api/auth/profile", err);
@@ -554,10 +643,192 @@ router.put("/password", requireAuth, async (req: AuthRequest, res) => {
     }
     db.users[idx].passwordHash = await hashPassword(String(newPassword));
     saveDB(db);
+    emitRealtime({ type: "users:changed", userId: db.users[idx].id });
     res.json({ ok: true });
   } catch (err) {
     console.error("/api/auth/password", err);
     res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+// POST /api/auth/rpc/token
+router.post("/rpc/token", requireAuth, (req: AuthRequest, res) => {
+  try {
+    const db = getDB();
+    const idx = db.users.findIndex((u) => u.id === req.user!.userId);
+    if (idx === -1) {
+      res.status(404).json({ error: "Usuário não encontrado" });
+      return;
+    }
+    const token = nanoid(32);
+    db.users[idx].rpcToken = token;
+    saveDB(db);
+    res.json({ token });
+  } catch (err) {
+    console.error("/api/auth/rpc/token", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+// GET /api/auth/rpc/status
+router.get("/rpc/status", (req, res) => {
+  try {
+    const token = String(req.query.token || req.headers["x-rpc-token"] || "").trim();
+    if (!token) {
+      res.status(401).json({ error: "Token RPC não fornecido" });
+      return;
+    }
+    const db = getDB();
+    const user = db.users.find((u) => u.rpcToken === token);
+    if (!user) {
+      res.status(401).json({ error: "Token RPC inválido" });
+      return;
+    }
+
+    const discord = getDiscordConfig();
+    
+    // Consideramos online se lastSeen for menor que 2 minutos atrás
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+    const lastSeenDate = user.lastSeen ? new Date(user.lastSeen) : null;
+    const online = lastSeenDate ? lastSeenDate > twoMinutesAgo : false;
+
+    res.json({
+      online,
+      username: user.username,
+      rpcClientId: discord.clientId || "1165688537548177538",
+      rpcName: "OUTSIDEHUB",
+      rpcDetails: user.username,
+      rpcState: getDisplayRole(user),
+      rpcRole: getDisplayRole(user),
+      rpcPage: user.currentPage || "Online",
+      rpcPath: user.currentPath || "/",
+      lastSeen: user.lastSeen,
+    });
+  } catch (err) {
+    console.error("/api/auth/rpc/status", err);
+    res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+// GET /api/auth/rpc/download
+router.get("/rpc/download", (req, res) => {
+  try {
+    const { file, token } = req.query as { file?: string; token?: string };
+    if (!token) {
+      res.status(400).send("Token obrigatório para download customizado.");
+      return;
+    }
+
+    const protocol = req.headers["x-forwarded-proto"] || req.protocol;
+    const host = req.headers["x-forwarded-host"] || req.get("host");
+    const serverUrl = `${protocol}://${host}`;
+
+    if (file === "bat") {
+      const batContent = `@echo off
+title OutsideHub RPC Companion
+echo Verificando dependencias do Node.js...
+if not exist node_modules (
+  echo Instalando dependencias (discord-rpc e axios)...
+  call npm install discord-rpc axios
+)
+echo Iniciando Discord RPC do OutsideHub...
+node outsidehub-rpc.cjs
+pause
+`;
+      res.setHeader("Content-Disposition", "attachment; filename=run-rpc.bat");
+      res.setHeader("Content-Type", "application/octet-stream");
+      res.send(batContent);
+      return;
+    }
+
+    const jsContent = `// OutsideHub Discord RPC Companion
+const RPC = require('discord-rpc');
+const axios = require('axios');
+
+const serverUrl = "${serverUrl}";
+const rpcToken = "${token}";
+
+let currentClientId = "";
+let rpc = null;
+let isConnected = false;
+
+console.log("=========================================");
+console.log("  OUTSIDEHUB DISCORD RPC COMPANION  ");
+console.log("=========================================");
+console.log("Conectando ao servidor: " + serverUrl);
+
+async function updatePresence() {
+  try {
+    const res = await axios.get(serverUrl + "/api/auth/rpc/status", {
+      headers: { "X-RPC-Token": rpcToken }
+    });
+    
+    const { online, username, rpcClientId, rpcDetails, rpcState } = res.data;
+
+    if (!rpcClientId) {
+      console.warn("Alerta: Discord Client ID nao configurado no painel da OutsideHub.");
+      if (rpc) {
+        rpc.destroy().catch(() => {});
+        rpc = null;
+        isConnected = false;
+      }
+      return;
+    }
+
+    if (rpcClientId !== currentClientId) {
+      if (rpc) {
+        await rpc.destroy().catch(() => {});
+        rpc = null;
+        isConnected = false;
+      }
+      currentClientId = rpcClientId;
+      rpc = new RPC.Client({ transport: 'ipc' });
+      rpc.on('ready', () => {
+        console.log("Conectado ao Discord Client com sucesso!");
+        isConnected = true;
+      });
+      rpc.on('disconnected', () => {
+        console.log("Desconectado do Discord.");
+        isConnected = false;
+      });
+      
+      console.log("Tentando conectar ao Discord (App ID: " + rpcClientId + ")...");
+      rpc.login({ clientId: rpcClientId }).catch(err => {
+        console.error("Falha ao conectar no Discord. Certifique-se de que o Discord esta aberto.");
+      });
+    }
+
+    if (online && isConnected && rpc) {
+      rpc.setActivity({
+        details: rpcDetails,
+        state: rpcState,
+        startTimestamp: new Date(res.data.lastSeen || Date.now()),
+        largeImageKey: 'outsidehub',
+        largeImageText: 'OUTSIDEHUB',
+        smallImageKey: 'online',
+        smallImageText: username,
+        instance: false,
+      }).catch(err => {});
+      console.log("[" + new Date().toLocaleTimeString() + "] RPC Atualizado: " + rpcDetails + " - " + rpcState);
+    } else if (!online && isConnected && rpc) {
+      rpc.clearActivity().catch(() => {});
+      console.log("[" + new Date().toLocaleTimeString() + "] Silenciando RPC (Usuario offline no site).");
+    }
+  } catch (err) {
+    console.error("[" + new Date().toLocaleTimeString() + "] Erro ao buscar status do servidor: " + (err.response?.data?.error || err.message));
+  }
+}
+
+updatePresence();
+setInterval(updatePresence, 15000);
+`;
+
+    res.setHeader("Content-Disposition", "attachment; filename=outsidehub-rpc.cjs");
+    res.setHeader("Content-Type", "application/javascript");
+    res.send(jsContent);
+  } catch (err) {
+    console.error("/api/auth/rpc/download", err);
+    res.status(500).send("Erro ao gerar arquivos.");
   }
 });
 

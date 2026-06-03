@@ -39,7 +39,7 @@ const BADGE_TEXT: Record<Exclude<LogType, "all">, string> = {
   info:   "#22c55e",
 };
 const BADGE_LABEL: Record<Exclude<LogType, "all">, string> = {
-  auth: "Auth", system: "Sistema", error: "Erro", info: "Info",
+  auth: "Auth", system: "System", error: "Error", info: "Info",
 };
 
 export default function Logs() {
@@ -51,12 +51,12 @@ export default function Logs() {
       <div style={{ maxWidth: 400, margin: "0 auto" }}>
         <div style={{ marginBottom: 20 }}>
           <h1 className="page-title">Logs</h1>
-          <p className="page-sub">Histórico de atividades</p>
+          <p className="page-sub">Activity history</p>
         </div>
         <div className="surface" style={{ padding: "48px 24px", textAlign: "center" }}>
           <Lock size={24} style={{ color: "var(--muted-foreground)", margin: "0 auto 12px" }} />
-          <p style={{ fontSize: 13, fontWeight: 600, color: "var(--foreground)", marginBottom: 4 }}>Acesso restrito</p>
-          <p style={{ fontSize: 12, color: "var(--muted-foreground)" }}>Apenas administradores podem ver os logs.</p>
+          <p style={{ fontSize: 13, fontWeight: 600, color: "var(--foreground)", marginBottom: 4 }}>Restricted access</p>
+          <p style={{ fontSize: 12, color: "var(--muted-foreground)" }}>Only administrators can view logs.</p>
         </div>
       </div>
     );
@@ -69,7 +69,7 @@ export default function Logs() {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
         <div>
           <h1 className="page-title">Logs</h1>
-          <p className="page-sub">Histórico de atividades do sistema</p>
+          <p className="page-sub">System activity history</p>
         </div>
         <select
           value={filter}
@@ -77,17 +77,17 @@ export default function Logs() {
           className="field"
           style={{ width: "auto" }}
         >
-          <option value="all">Todos</option>
+          <option value="all">All</option>
           <option value="auth">Auth</option>
-          <option value="system">Sistema</option>
-          <option value="error">Erro</option>
+          <option value="system">System</option>
+          <option value="error">Error</option>
           <option value="info">Info</option>
         </select>
       </div>
 
       <div className="surface" style={{ overflow: "hidden" }}>
         <div style={{ padding: "10px 14px", borderBottom: "1px solid var(--border)" }}>
-          <span style={{ fontSize: 12, color: "var(--muted-foreground)" }}>{filtered.length} entrada(s)</span>
+          <span style={{ fontSize: 12, color: "var(--muted-foreground)" }}>{filtered.length} entry(ies)</span>
         </div>
         {filtered.map((log) => (
           <div
@@ -98,10 +98,10 @@ export default function Logs() {
           >
             <div style={{ flexShrink: 0, width: 120 }}>
               <p style={{ fontSize: 11, fontFamily: "monospace", color: "var(--muted-foreground)" }}>
-                {new Date(log.ts).toLocaleDateString("pt-BR")}
+                {new Date(log.ts).toLocaleDateString("en-US")}
               </p>
               <p style={{ fontSize: 11, fontFamily: "monospace", color: "var(--muted-foreground)", opacity: 0.7 }}>
-                {new Date(log.ts).toLocaleTimeString("pt-BR")}
+                {new Date(log.ts).toLocaleTimeString("en-US")}
               </p>
             </div>
             <div style={{ flexShrink: 0, paddingTop: 1 }}>

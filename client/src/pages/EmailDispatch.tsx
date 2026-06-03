@@ -59,7 +59,7 @@ export default function EmailDispatch() {
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
         <div>
-          <h1 className="page-title">Disparo de Email</h1>
+          <h1 className="page-title">Disparo</h1>
           <p className="page-sub">Envie emails em massa para seus leads</p>
         </div>
         <button onClick={() => setShowSMTP(!showSMTP)} className="action action-outline" style={{ gap: 5 }}>

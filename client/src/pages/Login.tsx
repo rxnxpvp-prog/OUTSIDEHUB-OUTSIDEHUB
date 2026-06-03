@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { ArrowRight, KeyRound, LockKeyhole, ShieldCheck, Ticket, UserRound } from "lucide-react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -13,259 +14,289 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const { login, register } = useAuth();
   const [, navigate] = useLocation();
+  const displayCode = isRegister
+    ? (inviteCode.trim().toUpperCase() || "INVITE").slice(0, 10)
+    : "LOGIN";
+
+  const authMessage = (message: string | undefined, fallback: string) => {
+    if (!message) return fallback;
+    const normalized = message.toLowerCase();
+
+    if (normalized.includes("2fa") && (normalized.includes("necess") || normalized.includes("required"))) {
+      return "Authentication token required";
+    }
+    if (normalized.includes("2fa") && (normalized.includes("inv") || normalized.includes("invalid"))) {
+      return "Invalid authentication token";
+    }
+    if (normalized.includes("convite") || normalized.includes("invite")) {
+      return "Invalid or expired invite code";
+    }
+    if (normalized.includes("usu") || normalized.includes("senha")) {
+      return "Access denied";
+    }
+
+    return message;
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim() || !password.trim()) {
-      setError("Preencha todos os campos obrigatórios");
+      setError("Fill in all required fields");
       return;
     }
     if (isRegister && !inviteCode.trim()) {
-      setError("Código de convite é obrigatório");
+      setError("Invite code is required");
       return;
     }
-    
+
     setError("");
     setLoading(true);
-    
+
     if (isRegister) {
-      const r = await register(username, password, inviteCode.trim());
-      if (r.success) {
+      const result = await register(username, password, inviteCode.trim());
+      if (result.success) {
         navigate("/");
       } else {
-        setError(r.error || "Código inválido ou expirado");
+        setError(authMessage(result.error, "Invalid or expired invite code"));
       }
     } else {
-      const r = await login(username, password, otp.trim() ? otp : undefined);
-      if (r.success) {
+      const result = await login(username, password, otp.trim() ? otp : undefined);
+      if (result.success) {
         navigate("/");
-      } else if (r.requires2fa) {
+      } else if (result.requires2fa) {
         setRequires2fa(true);
-        setError(r.error || "Código 2FA necessário");
+        setError(authMessage(result.error, "Authentication token required"));
       } else {
-        setError(r.error || "Credenciais inválidas");
+        setError(authMessage(result.error, "Access denied"));
       }
     }
-    
+
     setLoading(false);
   };
 
+  const toggleMode = () => {
+    setIsRegister((value) => !value);
+    setError("");
+    setRequires2fa(false);
+  };
+
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "0 16px",
-        background: "var(--background)",
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
-      {/* Ambient glow atrás do card */}
-      <div style={{
-        position: "absolute",
-        width: 500, height: 500,
-        borderRadius: "50%",
-        background: "radial-gradient(circle, var(--accent-glow) 0%, transparent 65%)",
-        top: "50%", left: "50%",
-        transform: "translate(-50%, -50%)",
-        pointerEvents: "none",
-        filter: "blur(60px)",
-        opacity: 0.8,
-      }} />
+    <main className="login-page">
+      <div className="login-backdrop" aria-hidden="true">
+        <div className="login-refract login-refract-a" />
+        <div className="login-refract login-refract-b" />
+        <div className="login-refract login-refract-c" />
+        <div className="login-scanline" />
+      </div>
 
-      {/* Card glass — premium liquid glass */}
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 380,
-          background: "rgba(255, 255, 255, 0.03)",
-          backdropFilter: "blur(40px) saturate(1.6)",
-          WebkitBackdropFilter: "blur(40px) saturate(1.6)",
-          border: "1px solid var(--glass-border)",
-          borderRadius: 20,
-          boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 32px 80px rgba(0,0,0,0.5), 0 8px 24px rgba(0,0,0,0.3)",
-          padding: "48px 40px 40px",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        {/* Shimmer line no topo */}
-        <div style={{
-          position: "absolute",
-          top: 0, left: "15%", right: "15%",
-          height: 1,
-          background: "linear-gradient(90deg, transparent, var(--glass-shine), transparent)",
-          opacity: 0.6,
-          pointerEvents: "none",
-        }} />
-
-        {/* ── Liquid Glass Logo ── */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 36, gap: 16 }}>
-          <div style={{
-            width: 120, height: 120,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            position: "relative",
-          }}>
+      <section className="login-stage">
+        <div className="login-brand-panel">
+          <div className="login-terminal" aria-hidden="true">
+            <div className="login-terminal-header">
+              <span />
+              <span />
+              <span />
+              <strong>OH-ACCESS</strong>
+            </div>
+            <div className="login-terminal-body">
+              <div className="login-command">
+                <span>$</span>
+                outsidehub --open-gate
+              </div>
+              <div className="login-access-mask">
+                <span />
+                <span />
+                <span />
+                <strong>{displayCode}</strong>
+              </div>
+              <div className="login-vault-row">
+                <span>
+                  USER
+                  <b>REDACTED</b>
+                </span>
+                <span>
+                  PERM
+                  <b>USER</b>
+                </span>
+              </div>
+              <div className="login-terminal-lines">
+                <i />
+                <i />
+                <i />
+              </div>
+            </div>
             <img
-              src="/logo_o.png"
-              alt="OutsideHub"
-              className="logo-pulse"
-              style={{ 
-                width: "100%", height: "100%", 
-                objectFit: "contain", 
-                mixBlendMode: "screen",
-                filter: "var(--logo-filter)",
-              }}
-              onError={(e) => { 
-                e.currentTarget.src = "/oni_creepy_v2_-_Editado.png";
-                e.currentTarget.style.mixBlendMode = "normal";
-                e.currentTarget.style.borderRadius = "20px";
-              }}
+              src="/outside_hub_oni_icon.png"
+              alt=""
+              className="login-card-flag"
+              aria-hidden="true"
             />
           </div>
-          <img
-            src="/logo_text.png"
-            alt="OUTSIDE HUB"
-            style={{
-              height: 28,
-              objectFit: "contain",
-              mixBlendMode: "screen",
-              filter: "var(--logo-filter)",
-              opacity: 0.9,
-            }}
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-              if (e.currentTarget.nextElementSibling) {
-                (e.currentTarget.nextElementSibling as HTMLElement).style.display = "block";
-              }
-            }}
-          />
-          <span style={{
-            display: "none",
-            fontSize: 18,
-            fontWeight: 800,
-            letterSpacing: "-0.04em",
-            color: "var(--foreground)",
-            opacity: 0.8,
-          }}>
-            OUTSIDE HUB
-          </span>
+
+          <div className="login-node-panel" aria-hidden="true">
+            <div className="login-node-status">
+              <span>USER STATUS</span>
+              <div className="login-status-row">
+                <strong>AUTH</strong>
+                <i />
+                <b>VERIFIED</b>
+              </div>
+              <div className="login-status-row">
+                <strong>CHANNEL</strong>
+                <i />
+                <b>ENCRYPTED</b>
+              </div>
+              <div className="login-status-row">
+                <strong>CREW</strong>
+                <i />
+                <b>28 ACTIVE</b>
+              </div>
+              <div className="login-status-row">
+                <strong>UPLINK</strong>
+                <i />
+                <b>STABLE</b>
+              </div>
+            </div>
+
+            <div className="login-node-logs">
+              <p>&gt; outsidehub profile initialized</p>
+              <p>&gt; user access restored</p>
+              <p>&gt; encrypted route stable</p>
+            </div>
+
+            <div className="login-node-tags">OFF-GRID • PRIVATE • INTERNAL</div>
+          </div>
+
         </div>
 
-        {/* ── Form ── */}
-        <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {isRegister && (
-            <div>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 500, color: "var(--muted-foreground)", marginBottom: 5, letterSpacing: "0.02em" }}>
-                CÓDIGO DE CONVITE
-              </label>
-              <input
-                type="text"
-                value={inviteCode}
-                onChange={(e) => setInviteCode(e.target.value)}
-                placeholder="Ex: XXXX-XXXX"
-                className="field"
-                autoFocus={isRegister}
-              />
-            </div>
-          )}
+        <form className="login-card" onSubmit={submit}>
+          <div className="login-card-topline" aria-hidden="true" />
 
-          <div>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 500, color: "var(--muted-foreground)", marginBottom: 5, letterSpacing: "0.02em" }}>
-              USUÁRIO
-            </label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="seu_usuário"
-              autoComplete="username"
-              autoFocus={!isRegister}
-              className="field"
-            />
+          <div className="login-form-header">
+            <span className="login-kicker">{isRegister ? "RESTRICTED" : "PRIVATE ACCESS"}</span>
+            <h2>{isRegister ? "ACTIVATE INVITE" : "ACCESS TERMINAL"}</h2>
+            <p>{isRegister ? "Use private invitation to unlock access." : "Private user access for off-grid crews."}</p>
           </div>
 
-          <div>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 500, color: "var(--muted-foreground)", marginBottom: 5, letterSpacing: "0.02em" }}>
-              SENHA
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              autoComplete={isRegister ? "new-password" : "current-password"}
-              className="field"
-            />
+          <div className="login-tabs" role="tablist" aria-label="Access mode">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={!isRegister}
+              className={!isRegister ? "active" : ""}
+              onClick={() => {
+                setIsRegister(false);
+                setError("");
+                setRequires2fa(false);
+              }}
+            >
+              Operador
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={isRegister}
+              className={isRegister ? "active" : ""}
+              onClick={() => {
+                setIsRegister(true);
+                setError("");
+                setRequires2fa(false);
+              }}
+            >
+              Convidado
+            </button>
           </div>
 
-          {!isRegister && (
-            <div>
-              <label style={{ display: "block", fontSize: 11, fontWeight: 500, color: "var(--muted-foreground)", marginBottom: 5, letterSpacing: "0.02em" }}>
-                CÓDIGO 2FA
+          <div className="login-fields">
+            {isRegister && (
+              <label className="login-field">
+                <span>
+                  <Ticket size={13} />
+                  Invite code
+                </span>
+                <input
+                  type="text"
+                  value={inviteCode}
+                  onChange={(e) => setInviteCode(e.target.value)}
+                  placeholder="Codigo gerado no painel"
+                  className="field"
+                  autoFocus={isRegister}
+                />
+                <small>Convidados entram sempre com permissao de usuario.</small>
               </label>
+            )}
+
+            <label className="login-field">
+                <span>
+                  <UserRound size={13} />
+                  User
+              </span>
               <input
                 type="text"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                placeholder="000000"
-                autoComplete="one-time-code"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
+                autoFocus={!isRegister}
                 className="field"
               />
-              <p style={{ fontSize: 11, color: "var(--muted-foreground)", marginTop: 5, lineHeight: 1.4 }}>
-                {requires2fa
-                  ? "Insira o código do seu app de autenticação."
-                  : "Deixe em branco se não usar 2FA."}
-              </p>
-            </div>
-          )}
+            </label>
+
+            <label className="login-field">
+              <span>
+                <LockKeyhole size={13} />
+                Access key
+              </span>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete={isRegister ? "new-password" : "current-password"}
+                className="field"
+              />
+            </label>
+
+            {!isRegister && (
+              <label className="login-field">
+                <span>
+                  <KeyRound size={13} />
+                  Auth token
+                </span>
+                <input
+                  type="text"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  placeholder="000000"
+                  autoComplete="one-time-code"
+                  className="field"
+                />
+                <small>
+                  {requires2fa ? "Submit your current authentication token." : "Optional for users without 2FA."}
+                </small>
+              </label>
+            )}
+          </div>
 
           {error && (
-            <p style={{ fontSize: 12, color: "var(--destructive)", marginTop: -2 }}>{error}</p>
+            <div className="login-error" role="alert">
+              <ShieldCheck size={14} />
+              {error}
+            </div>
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="action action-solid"
-            style={{ marginTop: 6, width: "100%", padding: "9px 14px", fontSize: 13, fontWeight: 600 }}
-          >
-            {loading && (
-              <span className="spin" style={{
-                width: 13, height: 13, borderRadius: "50%",
-                border: "1.5px solid currentColor", borderTopColor: "transparent",
-                display: "inline-block",
-              }} />
+          <button type="submit" disabled={loading} className="action action-solid login-submit">
+            {loading ? (
+              <span className="spin login-spinner" />
+            ) : (
+              <ArrowRight size={16} />
             )}
-            {loading
-              ? (isRegister ? "Criando conta..." : (requires2fa ? "Validando…" : "Entrando…"))
-              : (isRegister ? "Criar Conta" : (requires2fa ? "Entrar com 2FA" : "Entrar"))}
+            {loading ? (isRegister ? "ACTIVATING..." : "OPENING GATE...") : isRegister ? "ACTIVATE ACCESS" : "OPEN GATE"}
           </button>
 
-          <button
-            type="button"
-            onClick={() => {
-              setIsRegister(!isRegister);
-              setError("");
-              setRequires2fa(false);
-            }}
-            style={{
-              marginTop: 8,
-              fontSize: 12,
-              color: "var(--muted-foreground)",
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              textDecoration: "underline",
-            }}
-          >
-            {isRegister ? "Já tenho uma conta. Fazer login." : "Tenho um código de convite. Criar conta."}
+          <button type="button" onClick={toggleMode} className="login-mode-toggle">
+            {isRegister ? "Voltar para login do crema" : "Criar conta com codigo de convidado"}
           </button>
         </form>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

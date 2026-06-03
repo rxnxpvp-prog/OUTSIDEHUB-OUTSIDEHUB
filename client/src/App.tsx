@@ -9,16 +9,17 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ChatProvider } from "./contexts/ChatContext";
 import { MaintenanceProvider } from "./contexts/MaintenanceContext";
 import MaintenanceGate from "./components/MaintenanceGate";
+import DiscordPresence from "./components/DiscordPresence";
+import AppNotifications from "./components/AppNotifications";
+import DesktopUpdateBanner from "./components/DesktopUpdateBanner";
 
 // Pages
 import Login from "./pages/Login";
 import Feed from "./pages/Feed";
-import TempMail from "./pages/TempMail";
-import Leads from "./pages/Leads";
+import Sms from "./pages/Sms";
+import LeadOps from "./pages/LeadOps";
 import EmailDispatch from "./pages/EmailDispatch";
-import Scraper from "./pages/Scraper";
 import Search from "./pages/Search";
-import Downloads from "./pages/Downloads";
 import Profile from "./pages/Profile";
 import PublicProfile from "./pages/PublicProfile";
 import GlobalChat from "./components/GlobalChat";
@@ -53,7 +54,7 @@ function AuthRoute({ children, feature }: { children: React.ReactNode, feature?:
   if (loading) return <Spinner />;
   if (!isAuthenticated) return <Redirect to="/login" />;
   if (feature && !isAdmin && user?.permissions) {
-    if (!user.permissions[feature]) return <Denied />;
+    if (user.permissions[feature] === false) return <Denied />;
   }
   return <>{children}</>;
 }
@@ -70,9 +71,36 @@ function AppShell() {
   const { isAuthenticated, loading } = useAuth();
   
   // Check if subdomain exists
-  const hostParts = window.location.hostname.split('.');
-  const isLocalhost = hostParts.includes('localhost') || hostParts.includes('127');
-  const isSubdomain = (!isLocalhost && hostParts.length > 2) || (isLocalhost && hostParts.length > 1 && !hostParts[0].includes('localhost'));
+  const hostname = window.location.hostname;
+  const hostParts = hostname.split('.');
+  const rootDomains = [
+    "outsidehub.com.br",
+    "www.outsidehub.com.br",
+    "outsidehubpriv.pages.dev",
+  ];
+  const isLocalHost =
+    hostname === "localhost" ||
+    hostname === "0.0.0.0" ||
+    hostname === "::1" ||
+    /^127(?:\.\d{1,3}){3}$/.test(hostname);
+  const tunnelHostSuffixes = [
+    "trycloudflare.com",
+    "loca.lt",
+    "ngrok-free.app",
+    "ngrok.app",
+  ];
+  const isTunnelHost = tunnelHostSuffixes.some((suffix) => hostname === suffix || hostname.endsWith(`.${suffix}`));
+  const ignoredSubdomains = ["www"];
+  const knownRoot = rootDomains.includes(hostname.toLowerCase());
+  const isSubdomain =
+    !knownRoot &&
+    !isLocalHost &&
+    !isTunnelHost &&
+    (
+      (hostname.endsWith(".outsidehub.com.br") && hostParts.length > 3) ||
+      (!hostname.endsWith(".outsidehub.com.br") && hostParts.length > 2)
+    ) &&
+    !ignoredSubdomains.includes(hostParts[0].toLowerCase());
   
   const subdomain = isSubdomain ? hostParts[0] : null;
 
@@ -96,7 +124,7 @@ function AppShell() {
       </Route>
 
       <Route path="/u/:identifier">
-        <PublicProfile />
+        <AuthRoute><Layout><PublicProfile /></Layout></AuthRoute>
       </Route>
 
       {/* Protected — wrapped in Layout */}
@@ -122,10 +150,13 @@ function AppShell() {
         </AuthRoute>
       </Route>
       <Route path="/tempmail">
-        <AuthRoute feature="tempmail"><Layout><TempMail /></Layout></AuthRoute>
+        <Redirect to="/sms" />
+      </Route>
+      <Route path="/sms">
+        <AuthRoute feature="sms"><Layout><Sms /></Layout></AuthRoute>
       </Route>
       <Route path="/leads">
-        <AuthRoute feature="leads"><Layout><Leads /></Layout></AuthRoute>
+        <AuthRoute feature="leads"><Layout><LeadOps /></Layout></AuthRoute>
       </Route>
       <Route path="/email">
         <AuthRoute feature="email"><Layout><EmailDispatch /></Layout></AuthRoute>
@@ -138,7 +169,7 @@ function AppShell() {
         </AuthRoute>
       </Route>
       <Route path="/downloads">
-        <AuthRoute feature="downloads"><Layout><Downloads /></Layout></AuthRoute>
+        <Redirect to="/feed" />
       </Route>
       <Route path="/profile">
         <AuthRoute><Layout><Profile /></Layout></AuthRoute>
@@ -161,11 +192,10 @@ function AppShell() {
         </AuthRoute>
       </Route>
       <Route path="/scraper">
-        <AuthRoute feature="scraper">
-          <MaintenanceGate feature="Scraper">
-            <Layout><Scraper /></Layout>
-          </MaintenanceGate>
-        </AuthRoute>
+        <Redirect to="/leads" />
+      </Route>
+      <Route path="/scrapper">
+        <Redirect to="/leads" />
       </Route>
       <Route path="/discord">
         <AuthRoute feature="discord"><Layout><Discord /></Layout></AuthRoute>
@@ -177,7 +207,9 @@ function AppShell() {
       </Route>
 
       {/* 404 */}
-      <Route><NotFound /></Route>
+      <Route>
+        {isAuthenticated ? <NotFound /> : <Redirect to="/login" />}
+      </Route>
     </Switch>
   );
 }
@@ -193,7 +225,10 @@ export default function App() {
             <TooltipProvider>
               <Background />
               <Router>
-                <Toaster richColors position="top-right" />
+                <DiscordPresence />
+                <AppNotifications />
+                <DesktopUpdateBanner />
+                <Toaster richColors position="top-right" closeButton />
                 <MaintenanceProvider>
                   <AppShell />
                 </MaintenanceProvider>

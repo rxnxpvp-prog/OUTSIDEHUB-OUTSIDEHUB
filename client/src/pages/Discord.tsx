@@ -4,6 +4,17 @@ import { LogOut, CheckCircle } from "lucide-react";
 import api from "@/lib/api";
 
 interface Account { id: string; username: string; discriminator: string; avatar?: string; }
+interface DiscordStatus {
+  configured: boolean;
+  clientId?: string;
+  redirectUri?: string;
+  rpcDetails?: string;
+  rpcState?: string;
+  rpcName?: string;
+  rpcUser?: string;
+  rpcPage?: string;
+  rpcToken?: string;
+}
 
 function DiscordIcon({ size = 20 }: { size?: number }) {
   return (
@@ -15,11 +26,23 @@ function DiscordIcon({ size = 20 }: { size?: number }) {
 
 export default function Discord() {
   const [account, setAccount] = useState<Account | null>(null);
+  const [status, setStatus] = useState<DiscordStatus | null>(null);
   const [loading, setLoading] = useState(false);
 
   const fetchStatus = async () => {
     try {
       const res = await api.get("/auth/discord/status");
+      setStatus({
+        configured: Boolean(res.data.configured),
+        clientId: res.data.clientId,
+        redirectUri: res.data.redirectUri,
+        rpcDetails: res.data.rpcDetails,
+        rpcState: res.data.rpcState,
+        rpcName: res.data.rpcName,
+        rpcUser: res.data.rpcUser,
+        rpcPage: res.data.rpcPage,
+        rpcToken: res.data.rpcToken,
+      });
       if (res.data.connected) {
         setAccount({
           id: res.data.discordId,
@@ -32,11 +55,29 @@ export default function Discord() {
       }
     } catch {
       setAccount(null);
+      setStatus(null);
+    }
+  };
+
+  const generateRpcToken = async () => {
+    try {
+      setLoading(true);
+      const res = await api.post("/auth/rpc/token");
+      setStatus(prev => prev ? { ...prev, rpcToken: res.data.token } : null);
+      toast.success("Token RPC gerado com sucesso!");
+    } catch {
+      toast.error("Erro ao gerar token RPC.");
+    } finally {
+      setLoading(false);
     }
   };
 
   const connect = async () => {
     try {
+      if (status && !status.configured) {
+        toast.error("Discord ainda nao foi configurado no Admin");
+        return;
+      }
       setLoading(true);
       const res = await api.get("/auth/discord/url");
       window.location.href = res.data.url;
@@ -136,6 +177,104 @@ export default function Discord() {
               </p>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Discord RPC Modo Web */}
+      <div className="surface" style={{ marginTop: 12, padding: 20 }}>
+        <p style={{ fontSize: 14, fontWeight: 700, color: "var(--foreground)", marginBottom: 6 }}>RPC Companion (Web)</p>
+        <p style={{ fontSize: 12.5, color: "var(--muted-foreground)", lineHeight: 1.5, marginBottom: 14 }}>
+          Use o script companion para atualizar seu RPC do Discord enquanto navega pelo site no navegador.
+        </p>
+
+        {status?.rpcToken ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: "var(--muted-foreground)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Seu Token RPC</label>
+              <div style={{ display: "flex", gap: 6 }}>
+                <input
+                  type="text"
+                  readOnly
+                  value={status.rpcToken}
+                  style={{
+                    flex: 1,
+                    background: "rgba(255,255,255,0.03)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "var(--radius)",
+                    padding: "6px 10px",
+                    fontSize: 12,
+                    color: "var(--foreground)",
+                    fontFamily: "monospace"
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(status.rpcToken || "");
+                    toast.success("Token copiado!");
+                  }}
+                  className="action action-outline"
+                  style={{ padding: "6px 12px", fontSize: 12, height: "auto" }}
+                >
+                  Copiar
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+              <a
+                href={`/api/auth/rpc/download?file=js&token=${status.rpcToken}`}
+                download="outsidehub-rpc.cjs"
+                className="action"
+                style={{ flex: 1, fontSize: 12, textDecoration: "none", display: "flex", justifyContent: "center", alignItems: "center", height: 32 }}
+              >
+                Baixar Script JS
+              </a>
+              <a
+                href={`/api/auth/rpc/download?file=bat&token=${status.rpcToken}`}
+                download="run-rpc.bat"
+                className="action action-outline"
+                style={{ flex: 1, fontSize: 12, textDecoration: "none", display: "flex", justifyContent: "center", alignItems: "center", height: 32 }}
+              >
+                Baixar Ativador BAT
+              </a>
+            </div>
+
+            <button
+              onClick={generateRpcToken}
+              className="action action-outline"
+              style={{ fontSize: 11, padding: "4px 8px", alignSelf: "flex-end", height: "auto", border: "none", opacity: 0.6 }}
+              disabled={loading}
+            >
+              Rotacionar Token
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={generateRpcToken}
+            className="action"
+            style={{ width: "100%", fontSize: 13 }}
+            disabled={loading}
+          >
+            Ativar RPC no Navegador
+          </button>
+        )}
+      </div>
+
+      <div className="surface" style={{ marginTop: 12, padding: 14 }}>
+        <p style={{ fontSize: 13, fontWeight: 700, color: "var(--foreground)", marginBottom: 10 }}>RPC Preview</p>
+        <div style={{ display: "grid", gap: 7, fontSize: 12 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+            <span style={{ color: "var(--muted-foreground)" }}>App</span>
+            <strong style={{ color: "var(--foreground)" }}>{status?.rpcName || "OUTSIDEHUB"}</strong>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+            <span style={{ color: "var(--muted-foreground)" }}>Usuario</span>
+            <strong style={{ color: "var(--foreground)" }}>{status?.rpcUser || account?.username || "Online"}</strong>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+            <span style={{ color: "var(--muted-foreground)" }}>Aba aberta</span>
+            <strong style={{ color: "var(--foreground)" }}>{status?.rpcPage || "Discord"}</strong>
+          </div>
         </div>
       </div>
     </div>

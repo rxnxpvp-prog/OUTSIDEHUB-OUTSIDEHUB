@@ -8,7 +8,7 @@ interface Recent { id: string; query: string; tab: Tab; ts: number; }
 const TABS: { id: Tab; label: string; icon: React.ElementType; description: string }[] = [
   { id: "intelx",   label: "IntelX",          icon: Globe,    description: "Pesquisa em fontes abertas e indexadas" },
   { id: "database", label: "Database Lookup",  icon: Database, description: "Consulta em bases de dados e registros" },
-  { id: "lofy",     label: "Lofy Search",      icon: Layers,   description: "Busca avançada com filtros personalizados" },
+  { id: "lofy",     label: "Lofy Search",      icon: Layers,   description: "Busca avancada com filtros personalizados" },
 ];
 
 function ago(ts: number) {
@@ -47,7 +47,7 @@ export default function Search() {
     <div style={{ maxWidth: 640, margin: "0 auto" }}>
       <div style={{ marginBottom: 20 }}>
         <h1 className="page-title">Search</h1>
-        <p className="page-sub">Pesquisa avançada em múltiplas fontes</p>
+        <p className="page-sub">Pesquisa avancada em multiplas fontes</p>
       </div>
 
       <div style={{ display: "flex", gap: 2, padding: 3, background: "var(--accent)", borderRadius: "var(--radius)", marginBottom: 16 }}>
@@ -86,7 +86,7 @@ export default function Search() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && search()}
-              placeholder={`Pesquisar em ${cfg.label}…`}
+              placeholder={`Pesquisar em ${cfg.label}...`}
               className="field"
               style={{ paddingLeft: 32 }}
             />
@@ -100,7 +100,7 @@ export default function Search() {
         <p style={{ fontSize: 13, fontWeight: 500, color: "var(--foreground)", marginBottom: 4 }}>{cfg.label}</p>
         <p style={{ fontSize: 12, color: "var(--muted-foreground)" }}>{cfg.description}</p>
         <p style={{ fontSize: 11, color: "var(--muted-foreground)", marginTop: 10, opacity: 0.6 }}>
-          Integração via API em breve
+          Integracao via API em breve
         </p>
       </div>
 

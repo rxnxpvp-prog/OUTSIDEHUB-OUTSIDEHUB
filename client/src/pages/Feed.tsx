@@ -1,22 +1,30 @@
-import React, { useState, useEffect } from "react";
-import { Heart, MessageCircle, Trash2, ImagePlus, Send, X, Shield } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import { Heart, MessageCircle, Trash2, ImagePlus, Send, X, Shield, Radio } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import api from "@/lib/api";
+import { subscribeRealtime } from "@/lib/realtime";
 import { toast } from "sonner";
 import Avatar from "@/components/Avatar";
+import OperatorProfileCard from "@/components/OperatorProfileCard";
+import { BadgeDisplay, nameColorFromBadges } from "@/components/BadgeIcon";
 
-interface Comment { id: string; userId: string; userName: string; userAvatar?: string; content: string; createdAt: string; }
-interface Post { id: string; userId: string; userName: string; userAvatar?: string; content: string; image?: string; likes: string[]; comments: Comment[]; createdAt: string; }
-interface PublicUser { id: string; name: string; username: string; role: "admin" | "user"; avatar?: string; bio?: string; badges: { id: string; name: string; icon: string; image?: string }[]; createdAt: string; }
+type Badge = { id: string; name: string; icon: string; image?: string; color?: string };
+interface Comment { id: string; userId: string; userName: string; userAvatar?: string; userRole?: string; userBadges?: Badge[]; content: string; createdAt: string; }
+interface Post { id: string; userId: string; userName: string; userAvatar?: string; userRole?: string; userBadges?: Badge[]; content: string; image?: string; likes: string[]; comments: Comment[]; createdAt: string; }
+interface PublicUser { id: string; name: string; username: string; role: "admin" | "user"; avatar?: string; bio?: string; badges: Badge[]; createdAt: string; }
+
+function operatorNameColor(_role?: string, badges?: { icon: string; color?: string }[]): string {
+  return nameColorFromBadges(badges, "var(--foreground)");
+}
 
 function ago(d: string) {
   const diff = Date.now() - new Date(d).getTime();
   const m = Math.floor(diff / 60000);
   const h = Math.floor(diff / 3600000);
-  if (m < 1) return "agora";
+  if (m < 1) return "now";
   if (m < 60) return `${m}m`;
   if (h < 24) return `${h}h`;
-  return new Date(d).toLocaleDateString("pt-BR");
+  return new Date(d).toLocaleDateString("en-US");
 }
 
 function ProfileModal({ userId, onClose }: { userId: string; onClose: () => void }) {
@@ -26,7 +34,7 @@ function ProfileModal({ userId, onClose }: { userId: string; onClose: () => void
   useEffect(() => {
     api.get(`/users/${userId}/public`)
       .then((r) => setP(r.data))
-      .catch(() => toast.error("Erro ao carregar perfil"))
+    .catch(() => toast.error("Failed to load profile"))
       .finally(() => setLoading(false));
   }, [userId]);
 
@@ -69,7 +77,7 @@ function ProfileModal({ userId, onClose }: { userId: string; onClose: () => void
           borderBottom: "1px solid rgba(255,255,255,0.06)",
           background: "rgba(255,255,255,0.02)"
         }}>
-          <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--foreground)" }}>Perfil</span>
+          <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--foreground)" }}>Profile</span>
           <button onClick={onClose} className="hdr-btn" style={{ width: 28, height: 28 }}>
             <X size={14} />
           </button>
@@ -153,13 +161,13 @@ function ProfileModal({ userId, onClose }: { userId: string; onClose: () => void
               opacity: 0.6
             }}>
               <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.02em", color: "var(--muted-foreground)" }}>
-                MEMBRO DESDE {new Date(p.createdAt).toLocaleDateString("pt-BR", { month: "long", year: "numeric" }).toUpperCase()}
+              MEMBER SINCE {new Date(p.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" }).toUpperCase()}
               </span>
             </div>
           </div>
         ) : (
           <div style={{ padding: 60, textAlign: "center" }}>
-            <p style={{ fontSize: 14, color: "var(--muted-foreground)", fontWeight: 500 }}>Perfil não encontrado</p>
+            <p style={{ fontSize: 14, color: "var(--muted-foreground)", fontWeight: 500 }}>Profile not found</p>
           </div>
         )}
       </div>
@@ -177,15 +185,41 @@ export default function Feed() {
   const [commenting, setCommenting] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
   const [viewProfile, setViewProfile] = useState<string | null>(null);
+  const [pendingLikes, setPendingLikes] = useState<Record<string, boolean>>({});
+  const [pendingComments, setPendingComments] = useState<Record<string, boolean>>({});
+  const loadingPostsRef = React.useRef(false);
+
+  const loadPosts = useCallback((showError = false) => {
+    if (loadingPostsRef.current) return;
+    loadingPostsRef.current = true;
+    api
+      .get("/posts")
+      .then((r) => setPosts(r.data))
+    .catch(() => showError && toast.error("Failed to load"))
+      .finally(() => {
+        loadingPostsRef.current = false;
+        setLoading(false);
+      });
+  }, []);
 
   useEffect(() => {
-    api.get("/posts").then((r) => setPosts(r.data)).catch(() => toast.error("Erro ao carregar")).finally(() => setLoading(false));
-  }, []);
+    loadPosts(true);
+    const unsubscribe = subscribeRealtime((event) => {
+      if (event.type === "sync" || event.type === "posts:changed" || event.type === "users:changed") {
+        loadPosts(false);
+      }
+    });
+    const interval = setInterval(() => loadPosts(false), 5000);
+    return () => {
+      unsubscribe();
+      clearInterval(interval);
+    };
+  }, [loadPosts]);
 
   const uploadImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    if (f.size > 5_000_000) { toast.error("Máximo 5MB"); return; }
+    if (f.size > 5_000_000) { toast.error("Max 5MB"); return; }
     const r = new FileReader();
     r.onload = (ev) => setImage(ev.target?.result as string);
     r.readAsDataURL(f);
@@ -198,31 +232,51 @@ export default function Feed() {
       const r = await api.post("/posts", { content, image });
       setPosts((p) => [r.data, ...p]);
       setContent(""); setImage(null);
-    } catch { toast.error("Erro ao postar"); }
+    } catch { toast.error("Failed to post"); }
     finally { setPosting(false); }
   };
 
   const like = async (id: string) => {
+    if (pendingLikes[id]) return;
+    setPendingLikes((current) => ({ ...current, [id]: true }));
     try {
       const r = await api.post(`/posts/${id}/like`);
       setPosts((p) => p.map((x) => x.id === id ? r.data : x));
-    } catch { toast.error("Erro"); }
+      loadPosts(false);
+    } catch { toast.error("Error"); }
+    finally {
+      setPendingLikes((current) => {
+        const next = { ...current };
+        delete next[id];
+        return next;
+      });
+    }
   };
 
   const del = async (id: string) => {
     try {
       await api.delete(`/posts/${id}`);
       setPosts((p) => p.filter((x) => x.id !== id));
-    } catch { toast.error("Erro"); }
+    } catch { toast.error("Error"); }
   };
 
   const comment = async (postId: string) => {
     if (!commentText.trim()) return;
+    if (pendingComments[postId]) return;
+    setPendingComments((current) => ({ ...current, [postId]: true }));
     try {
       const r = await api.post(`/posts/${postId}/comments`, { content: commentText });
       setPosts((p) => p.map((x) => x.id === postId ? { ...x, comments: [...x.comments, r.data] } : x));
       setCommentText(""); setCommenting(null);
-    } catch { toast.error("Erro"); }
+      loadPosts(false);
+    } catch { toast.error("Error"); }
+    finally {
+      setPendingComments((current) => {
+        const next = { ...current };
+        delete next[postId];
+        return next;
+      });
+    }
   };
 
   const s: React.CSSProperties = { padding: 16, marginBottom: 10 };
@@ -238,6 +292,27 @@ export default function Feed() {
   return (
     <>
       <div style={{ maxWidth: 540, margin: "0 auto", display: "flex", flexDirection: "column", gap: 10 }}>
+        <section className="network-status" aria-label="Network status">
+          <div className="network-status__header">
+            <span>NETWORK STATUS</span>
+            <i />
+          </div>
+          <div className="network-status__grid">
+            <div>
+              <strong>27</strong>
+              <span>users online</span>
+            </div>
+            <div>
+              <strong>4</strong>
+              <span>active channels</span>
+            </div>
+            <div>
+              <Radio size={13} />
+              <span>Encrypted relay stable</span>
+            </div>
+          </div>
+        </section>
+
         {user && (
           <div className="surface" style={s}>
             <div style={{ display: "flex", gap: 10 }}>
@@ -248,7 +323,7 @@ export default function Feed() {
                     value={content}
                     onChange={(e) => { if (e.target.value.length <= 2000) setContent(e.target.value); }}
                     onKeyDown={(e) => { if (e.key === "Enter" && e.metaKey) post(); }}
-                    placeholder="O que você está pensando? (Cmd+Enter para postar)"
+                    placeholder="Broadcast to network..."
                     rows={2}
                     style={{ width: "100%", background: "transparent", border: "none", outline: "none", resize: "none", fontSize: 13, color: "var(--foreground)", fontFamily: "inherit", lineHeight: 1.5, whiteSpace: "pre-wrap" }}
                   />
@@ -273,7 +348,7 @@ export default function Feed() {
                   </label>
                   <button onClick={post} disabled={!content.trim() || posting} className="action action-solid" style={{ gap: 5 }}>
                     <Send size={12} />
-                    {posting ? "Postando…" : "Postar"}
+                    {posting ? "Transmitting..." : "Transmit"}
                   </button>
                 </div>
               </div>
@@ -283,7 +358,7 @@ export default function Feed() {
 
         {posts.length === 0 ? (
           <div style={{ ...s, padding: "40px 14px", textAlign: "center" }}>
-            <p style={{ fontSize: 13, color: "var(--muted-foreground)" }}>Nenhum post ainda.</p>
+            <p style={{ fontSize: 13, color: "var(--muted-foreground)" }}>No drops on this channel yet.</p>
           </div>
         ) : posts.map((post) => {
           const liked = user ? post.likes.includes(user.id) : false;
@@ -292,16 +367,23 @@ export default function Feed() {
               <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                 <Avatar name={post.userName} src={post.userAvatar} size={38} onClick={() => setViewProfile(post.userId)} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 22, marginBottom: 4 }}>
                     <button
                       onClick={() => setViewProfile(post.userId)}
-                      style={{ fontSize: 14, fontWeight: 700, color: "var(--foreground)", padding: 0, lineHeight: 1 }}
+                      style={{ display: "inline-flex", alignItems: "center", height: 22, fontSize: 14, fontWeight: 700, color: operatorNameColor(post.userRole, post.userBadges), padding: 0, lineHeight: "22px" }}
                       onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
                       onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
                     >
                       {post.userName}
                     </button>
-                    <span style={{ fontSize: 12, color: "var(--muted-foreground)", lineHeight: 1 }}>{ago(post.createdAt)}</span>
+                    {post.userBadges && post.userBadges.length > 0 && (
+                      <div style={{ display: "flex", gap: 3, alignItems: "center", height: 22 }}>
+                        {post.userBadges.map((b) => (
+                          <BadgeDisplay key={b.id} badge={b} size={18} />
+                        ))}
+                      </div>
+                    )}
+                    <span style={{ display: "inline-flex", alignItems: "center", height: 22, fontSize: 12, color: "var(--muted-foreground)", lineHeight: "22px" }}>{ago(post.createdAt)}</span>
                   </div>
                   
                   <p style={{ fontSize: 14, lineHeight: 1.5, color: "var(--foreground)", marginBottom: post.image ? 10 : 0, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
@@ -331,7 +413,8 @@ export default function Feed() {
               <div style={{ display: "flex", alignItems: "center", gap: 14, paddingTop: 10, marginTop: 10, borderTop: "1px solid var(--border)" }}>
                 <button
                   onClick={() => like(post.id)}
-                  style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, color: liked ? "#e5484d" : "var(--muted-foreground)", transition: "color 100ms" }}
+                  disabled={Boolean(pendingLikes[post.id])}
+                  style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, color: liked ? "#e5484d" : "var(--muted-foreground)", transition: "color 100ms", opacity: pendingLikes[post.id] ? 0.55 : 1 }}
                   onMouseEnter={(e) => { if (!liked) e.currentTarget.style.color = "var(--foreground)"; }}
                   onMouseLeave={(e) => { if (!liked) e.currentTarget.style.color = "var(--muted-foreground)"; }}
                 >
@@ -357,7 +440,7 @@ export default function Feed() {
                       <div style={{ flex: 1, background: "var(--accent)", borderRadius: "var(--radius)", padding: "5px 9px" }}>
                         <button
                           onClick={() => setViewProfile(c.userId)}
-                          style={{ fontSize: 12, fontWeight: 600, color: "var(--foreground)", padding: 0 }}
+                          style={{ fontSize: 12, fontWeight: 600, color: operatorNameColor(c.userRole, c.userBadges), padding: 0 }}
                           onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
                           onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
                         >
@@ -379,12 +462,12 @@ export default function Feed() {
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && comment(post.id)}
-                      placeholder="Comentar…"
+                      placeholder="Send encrypted signal..."
                       className="field"
                       style={{ flex: 1 }}
                     />
                     <button onClick={() => comment(post.id)} disabled={!commentText.trim()} className="action action-solid">
-                      Enviar
+                      {pendingComments[post.id] ? "Sending..." : "Send"}
                     </button>
                   </div>
                 </div>
@@ -394,7 +477,7 @@ export default function Feed() {
         })}
       </div>
 
-      {viewProfile && <ProfileModal userId={viewProfile} onClose={() => setViewProfile(null)} />}
+      <OperatorProfileCard userId={viewProfile} onClose={() => setViewProfile(null)} />
     </>
   );
 }

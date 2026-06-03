@@ -6,9 +6,10 @@ interface AvatarProps {
   size?: number;
   onClick?: () => void;
   className?: string;
+  style?: React.CSSProperties;
 }
 
-export default function Avatar({ name, src, size = 32, onClick, className = "" }: AvatarProps) {
+export default function Avatar({ name, src, size = 32, onClick, className = "", style }: AvatarProps) {
   const initial = name ? name.charAt(0).toUpperCase() : "?";
 
   return (
@@ -30,6 +31,7 @@ export default function Avatar({ name, src, size = 32, onClick, className = "" }
         overflow: "hidden",
         cursor: onClick ? "pointer" : "default",
         userSelect: "none",
+        ...style,
       }}
     >
       {src ? (

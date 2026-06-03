@@ -1,11 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import api from "@/lib/api";
+import { onUserUpdated } from "@/lib/userEvents";
+import { subscribeRealtime } from "@/lib/realtime";
 
 export interface Badge {
   id: string;
   name: string;
   icon: string;
   image?: string;
+  color?: string;
 }
 
 export interface User {
@@ -14,6 +17,7 @@ export interface User {
   username: string;
   email: string;
   role: "admin" | "moderator" | "user";
+  accessCode?: string;
   permissions?: Record<string, boolean>;
   customSubdomain?: string;
   avatar?: string;
@@ -59,6 +63,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .catch(() => localStorage.removeItem("outsidehub_token"))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    return onUserUpdated<User>((payload) => {
+      setUser((current) => {
+        if (!current || current.id !== payload.userId) return current;
+        return { ...current, ...payload.user, badges: payload.user.badges || [] };
+      });
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    return subscribeRealtime((event) => {
+      if (event.type !== "users:changed") return;
+      if (event.userId && event.userId !== user.id) return;
+      api
+        .get("/auth/me")
+        .then((res) => setUser(res.data))
+        .catch(() => localStorage.removeItem("outsidehub_token"));
+    });
+  }, [user?.id]);
 
   const login = async (username: string, password: string, otp?: string) => {
     try {

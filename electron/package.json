@@ -1,107 +1,52 @@
 {
   "name": "outsidehub-desktop",
-  "version": "1.0.0",
-  "description": "OutsideHub Desktop App",
-  "main": "main.js",
+  "version": "1.0.4",
+  "description": "OutsideHub desktop shell",
+  "main": "main.cjs",
   "author": "OutsideHub",
   "license": "MIT",
+  "private": true,
   "scripts": {
     "start": "electron .",
-    "build:win": "electron-builder --win --x64",
-    "build:mac": "electron-builder --mac",
-    "build:linux": "electron-builder --linux"
+    "build:win": "electron-builder --win nsis --x64"
+  },
+  "dependencies": {
+    "discord-rpc": "^4.0.1"
+  },
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8"
   },
   "build": {
-    "appId": "com.outsidehub.app",
+    "appId": "com.outsidehub.desktop",
     "productName": "OutsideHub",
-    "copyright": "Copyright 2026 OutsideHub",
-    "asar": true,
     "directories": {
       "output": "../release"
     },
+    "asar": false,
     "files": [
-      "main.js",
-      "preload.js",
+      "main.cjs",
+      "preload.cjs",
+      "package.json",
       "icons/**/*"
     ],
     "extraResources": [
       {
-        "from": "../dist/public",
-        "to": "dist/public"
+        "from": "../dist",
+        "to": "dist"
       },
       {
-        "from": "../dist/electron-server",
-        "to": "dist/electron-server"
-      },
-      {
-        "from": "../node_modules",
-        "to": "node_modules",
-        "filter": [
-          "express/**/*",
-          "bcryptjs/**/*",
-          "jsonwebtoken/**/*",
-          "nanoid/**/*",
-          "speakeasy/**/*",
-          "cors/**/*",
-          "axios/**/*",
-          "dotenv/**/*",
-          "cookie/**/*",
-          "cookie-signature/**/*",
-          "debug/**/*",
-          "depd/**/*",
-          "destroy/**/*",
-          "ee-first/**/*",
-          "encodeurl/**/*",
-          "escape-html/**/*",
-          "etag/**/*",
-          "finalhandler/**/*",
-          "forwarded/**/*",
-          "fresh/**/*",
-          "http-errors/**/*",
-          "iconv-lite/**/*",
-          "inherits/**/*",
-          "ipaddr.js/**/*",
-          "media-typer/**/*",
-          "merge-descriptors/**/*",
-          "methods/**/*",
-          "mime/**/*",
-          "mime-db/**/*",
-          "mime-types/**/*",
-          "ms/**/*",
-          "negotiator/**/*",
-          "on-finished/**/*",
-          "parseurl/**/*",
-          "path-to-regexp/**/*",
-          "proxy-addr/**/*",
-          "qs/**/*",
-          "range-parser/**/*",
-          "raw-body/**/*",
-          "router/**/*",
-          "safe-buffer/**/*",
-          "send/**/*",
-          "serve-static/**/*",
-          "setprototypeof/**/*",
-          "statuses/**/*",
-          "toidentifier/**/*",
-          "type-is/**/*",
-          "unpipe/**/*",
-          "utils-merge/**/*",
-          "vary/**/*",
-          "object-assign/**/*",
-          "safer-buffer/**/*"
-        ]
+        "from": "../outsidehub.ico",
+        "to": "outsidehub.ico"
       }
     ],
+    "extraMetadata": {
+      "main": "main.cjs"
+    },
     "win": {
-      "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        }
-      ],
-      "icon": "icons/icon.ico"
+      "target": "nsis",
+      "icon": "icons/icon.ico",
+      "signAndEditExecutable": false
     },
     "nsis": {
       "oneClick": false,
@@ -109,19 +54,6 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "OutsideHub"
-    },
-    "mac": {
-      "target": "dmg"
-    },
-    "linux": {
-      "target": "AppImage"
     }
-  },
-  "devDependencies": {
-    "electron": "^33.0.0",
-    "electron-builder": "^24.13.3"
-  },
-  "dependencies": {
-    "discord-rpc": "^4.0.1"
   }
 }

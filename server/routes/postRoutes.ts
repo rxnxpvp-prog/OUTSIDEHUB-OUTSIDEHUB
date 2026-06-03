@@ -2,13 +2,39 @@ import { Router } from "express";
 import { getDB, saveDB } from "../db.js";
 import { requireAuth, type AuthRequest } from "../auth.js";
 import { nanoid } from "nanoid";
+import { emitRealtime } from "../events.js";
 
 const router = Router();
+
+function hydratePost(post: any, db: ReturnType<typeof getDB>) {
+  const user = db.users.find((u) => u.id === post.userId);
+  return {
+    ...post,
+    userName: user?.name || post.userName,
+    userAvatar: user?.avatar || post.userAvatar,
+    userRole: user?.role || "user",
+    userBadges: user?.badges || [],
+    comments: (post.comments || []).map((comment: any) => {
+      const commentUser = db.users.find((u) => u.id === comment.userId);
+      return {
+        ...comment,
+        userName: commentUser?.name || comment.userName,
+        userAvatar: commentUser?.avatar || comment.userAvatar,
+        userRole: commentUser?.role || "user",
+        userBadges: commentUser?.badges || [],
+      };
+    }),
+  };
+}
 
 // GET /api/posts
 router.get("/", requireAuth, (req, res) => {
   const db = getDB();
-  res.json(db.posts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+  res.json(
+    db.posts
+      .map((post) => hydratePost(post, db))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  );
 });
 
 // POST /api/posts
@@ -41,7 +67,23 @@ router.post("/", requireAuth, (req: AuthRequest, res) => {
 
   db.posts.unshift(post);
   saveDB(db);
-  res.status(201).json(post);
+  emitRealtime({ type: "posts:changed" });
+  emitRealtime({
+    type: "feed:post",
+    postId: post.id,
+    actorId: user.id,
+    actorName: user.name,
+    preview: content.trim().slice(0, 140),
+  });
+  emitRealtime({
+    type: "admin:log",
+    logId: nanoid(),
+    level: "info",
+    action: "FEED_POST",
+    description: `${user.name} publicou no feed`,
+    actorName: user.name,
+  });
+  res.status(201).json(hydratePost(post, db));
 });
 
 // DELETE /api/posts/:id
@@ -63,6 +105,7 @@ router.delete("/:id", requireAuth, (req: AuthRequest, res) => {
 
   db.posts.splice(idx, 1);
   saveDB(db);
+  emitRealtime({ type: "posts:changed" });
   res.json({ success: true });
 });
 
@@ -87,7 +130,8 @@ router.post("/:id/like", requireAuth, (req: AuthRequest, res) => {
   }
 
   saveDB(db);
-  res.json(db.posts[idx]);
+  emitRealtime({ type: "posts:changed" });
+  res.json(hydratePost(db.posts[idx], db));
 });
 
 // POST /api/posts/:id/comments
@@ -125,7 +169,8 @@ router.post("/:id/comments", requireAuth, (req: AuthRequest, res) => {
 
   db.posts[idx].comments.push(comment);
   saveDB(db);
-  res.status(201).json(comment);
+  emitRealtime({ type: "posts:changed" });
+  res.status(201).json(hydratePost(db.posts[idx], db).comments.find((item: any) => item.id === comment.id) || comment);
 });
 
 export default router;

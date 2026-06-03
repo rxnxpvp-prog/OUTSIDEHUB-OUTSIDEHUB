@@ -2,12 +2,14 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 import { Copy, Trash2, Plus, RefreshCw, Mail, CheckCircle, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import api from "@/lib/api";
 
 const BASE = "https://api.mail.tm";
 const KEY = "tempmail_mailboxes";
 
 interface Mailbox { id: string; address: string; password: string; token: string; createdAt: string; }
-interface MailMsg { id: string; from: { address: string; name: string }; subject: string; intro: string; createdAt: string; seen: boolean; }
+interface HostingerConfig { configured: boolean; domain: string; inboxEmail: string; imapHost: string; imapPort: string; }
+interface MailMsg { id: string; from: { address: string; name: string }; subject: string; intro: string; createdAt: string; seen: boolean; text?: string; codes?: string[]; }
 interface MailDetail { id: string; from: { address: string; name: string }; subject: string; text?: string; html?: string[]; createdAt: string; }
 
 function load(): Mailbox[] {
@@ -20,7 +22,7 @@ function Spin() {
   return <span className="spin" style={{ width: 14, height: 14, borderRadius: "50%", border: "2px solid currentColor", borderTopColor: "transparent", display: "inline-block", opacity: 0.6 }} />;
 }
 
-export default function TempMail() {
+export default function TempMail({ embedded = false }: { embedded?: boolean }) {
   const [mailboxes, setMailboxes] = useState<Mailbox[]>(load);
   const [selected, setSelected] = useState<string | null>(null);
   const [msgs, setMsgs] = useState<Record<string, MailMsg[]>>({});
@@ -30,13 +32,90 @@ export default function TempMail() {
   const [msgsLoading, setMsgsLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const [mode, setMode] = useState<"hostinger" | "tm">("hostinger");
+  const [hostinger, setHostinger] = useState<HostingerConfig | null>(null);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const current = mailboxes.find((m) => m.id === selected) ?? null;
+  const visibleMailboxes = mode === "hostinger"
+    ? mailboxes.filter((m) => m.id.startsWith("hostinger-"))
+    : mailboxes.filter((m) => !m.id.startsWith("hostinger-"));
+  const current = visibleMailboxes.find((m) => m.id === selected) ?? null;
+
+  useEffect(() => {
+    api.get("/mail/hostinger-alias/config")
+      .then((res) => setHostinger(res.data))
+      .catch(() => setHostinger(null));
+  }, []);
+
+  const loadHostingerAliases = useCallback(async () => {
+    try {
+      const res = await api.get("/mail/hostinger-alias/aliases");
+      const aliases: Mailbox[] = (res.data.aliases || []).map((item: any) => ({
+        id: item.id,
+        address: item.address,
+        password: "",
+        token: "",
+        createdAt: item.createdAt,
+      }));
+      setMailboxes((current) => {
+        const updated = [...aliases, ...current.filter((m) => !m.id.startsWith("hostinger-"))];
+        save(updated);
+        return updated;
+      });
+      if (aliases.length > 0) setSelected((current) => current || aliases[0].id);
+    } catch {
+      setMailboxes((current) => current.filter((m) => !m.id.startsWith("hostinger-")));
+    }
+  }, []);
+
+  useEffect(() => {
+    loadHostingerAliases();
+  }, [loadHostingerAliases]);
+
+  const generateHostingerAlias = async () => {
+    if (!hostinger?.configured || !hostinger.domain) {
+      toast.error("Configure o catch-all da Hostinger no Admin");
+      return;
+    }
+    setGenLoading(true);
+    try {
+      const res = await api.post("/mail/hostinger-alias/aliases");
+      const item = res.data.alias;
+      const nb: Mailbox = { id: item.id, address: item.address, password: "", token: "", createdAt: item.createdAt };
+      setMailboxes((current) => {
+        const updated = [nb, ...current.filter((m) => m.id !== nb.id)];
+        save(updated);
+        return updated;
+      });
+      setSelected(nb.id); setOpenMsg(null); setDetail(null);
+      navigator.clipboard.writeText(nb.address);
+      toast.success("Alias criado e copiado");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "Erro ao criar alias");
+    } finally {
+      setGenLoading(false);
+    }
+  };
 
   const fetchMsgs = useCallback(async (mb: Mailbox, silent = false) => {
     if (!silent) setMsgsLoading(true);
     try {
+      if (mb.id.startsWith("hostinger-")) {
+        const r = await api.get("/mail/hostinger-alias/messages", { params: { alias: mb.address } });
+        const mapped: MailMsg[] = (r.data.messages || []).map((item: any) => ({
+          id: item.id,
+          from: { address: item.from || "hostinger", name: item.codes?.[0] ? `Code ${item.codes[0]}` : "Hostinger" },
+          subject: item.subject,
+          intro: item.intro,
+          createdAt: item.createdAt,
+          seen: false,
+          text: item.text,
+          codes: item.codes || [],
+        }));
+        setMsgs((p) => ({ ...p, [mb.id]: mapped }));
+        if (!silent) toast.success(`${mapped.length} email(s) encontrados`);
+        return;
+      }
       const r = await axios.get(`${BASE}/messages`, { headers: { Authorization: `Bearer ${mb.token}` } });
       setMsgs((p) => ({ ...p, [mb.id]: r.data["hydra:member"] ?? [] }));
     } catch {
@@ -55,6 +134,10 @@ export default function TempMail() {
   }, [selected, current, fetchMsgs]);
 
   const generate = async () => {
+    if (mode === "hostinger") {
+      generateHostingerAlias();
+      return;
+    }
     setGenLoading(true);
     try {
       const dr = await axios.get(`${BASE}/domains`);
@@ -80,6 +163,18 @@ export default function TempMail() {
   };
 
   const deleteMb = (id: string) => {
+    const target = mailboxes.find((m) => m.id === id);
+    if (target?.id.startsWith("hostinger-")) {
+      api.delete(`/mail/hostinger-alias/aliases/${id}`)
+        .then(() => {
+          const updated = mailboxes.filter((m) => m.id !== id);
+          setMailboxes(updated); save(updated);
+          if (selected === id) { setSelected(null); setOpenMsg(null); setDetail(null); }
+          toast.success("Alias removido");
+        })
+        .catch((err) => toast.error(err?.response?.data?.error || "Erro ao remover alias"));
+      return;
+    }
     const updated = mailboxes.filter((m) => m.id !== id);
     setMailboxes(updated); save(updated);
     if (selected === id) { setSelected(null); setOpenMsg(null); setDetail(null); }
@@ -94,6 +189,19 @@ export default function TempMail() {
 
   const openDetail = async (msgId: string) => {
     if (!current) return;
+    if (current.id.startsWith("hostinger-")) {
+      const msg = (msgs[current.id] || []).find((item) => item.id === msgId);
+      if (!msg) return;
+      setOpenMsg(msgId);
+      setDetail({
+        id: msg.id,
+        from: msg.from,
+        subject: msg.subject,
+        text: msg.text || msg.intro || "Sem conteudo",
+        createdAt: msg.createdAt,
+      });
+      return;
+    }
     setOpenMsg(msgId); setDetailLoading(true);
     try {
       const r = await axios.get(`${BASE}/messages/${msgId}`, { headers: { Authorization: `Bearer ${current.token}` } });
@@ -108,31 +216,57 @@ export default function TempMail() {
 
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-        <div>
-          <h1 className="page-title">TempMail</h1>
-          <p className="page-sub">Emails temporários via mail.tm</p>
+      {!embedded && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <div>
+            <h1 className="page-title">TempMail</h1>
+            <p className="page-sub">Emails temporários via mail.tm</p>
+          </div>
+          <button onClick={generate} disabled={genLoading} className="action action-solid" style={{ gap: 6 }}>
+            {genLoading ? <Spin /> : <Plus size={14} />}
+            {mode === "hostinger" ? "Gerar Alias" : "Gerar Email"}
+          </button>
         </div>
-        <button onClick={generate} disabled={genLoading} className="action action-solid" style={{ gap: 6 }}>
-          {genLoading ? <Spin /> : <Plus size={14} />}
-          Gerar Email
-        </button>
+      )}
+      {embedded && (
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+          <button onClick={generate} disabled={genLoading} className="action action-solid" style={{ gap: 6 }}>
+            {genLoading ? <Spin /> : <Plus size={14} />}
+            {mode === "hostinger" ? "Gerar Alias" : "Gerar Email"}
+          </button>
+        </div>
+      )}
+
+      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+        <button onClick={() => setMode("hostinger")} className={mode === "hostinger" ? "action action-solid" : "action action-ghost"}>Hostinger</button>
+        <button onClick={() => setMode("tm")} className={mode === "tm" ? "action action-solid" : "action action-ghost"}>mail.tm</button>
       </div>
+
+      {mode === "hostinger" && (
+        <div style={{ marginBottom: 12, padding: "10px 12px", border: "1px solid var(--border)", borderRadius: "var(--radius)", background: "var(--card)" }}>
+          <p style={{ fontSize: 12, color: "var(--foreground)", fontWeight: 600 }}>
+            {hostinger?.configured ? `Catch-all ativo: *@${hostinger.domain}` : "Hostinger catch-all nao configurado"}
+          </p>
+          <p style={{ fontSize: 11, color: "var(--muted-foreground)", marginTop: 3 }}>
+            {hostinger?.configured ? `Recebimento em ${hostinger.inboxEmail}` : "Configure dominio e inbox no painel Admin."}
+          </p>
+        </div>
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 12 }} className="stack-mobile">
         <div style={s}>
           <div style={{ padding: "10px 12px", borderBottom: "1px solid var(--border)" }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: "var(--foreground)" }}>
-              Caixas ({mailboxes.length})
+              Caixas ({visibleMailboxes.length})
             </span>
           </div>
           <div style={{ overflowY: "auto", maxHeight: 500 }}>
-            {mailboxes.length === 0 ? (
+            {visibleMailboxes.length === 0 ? (
               <div style={{ padding: "32px 12px", textAlign: "center" }}>
                 <Mail size={24} style={{ color: "var(--muted-foreground)", margin: "0 auto 8px", opacity: 0.4 }} />
                 <p style={{ fontSize: 12, color: "var(--muted-foreground)" }}>Nenhuma caixa criada</p>
               </div>
-            ) : mailboxes.map((mb) => {
+            ) : visibleMailboxes.map((mb) => {
               const count = msgs[mb.id]?.length ?? 0;
               const isSel = selected === mb.id;
               return (
@@ -156,7 +290,7 @@ export default function TempMail() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 12, fontFamily: "monospace", color: "var(--foreground)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{mb.address}</p>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
-                      <span style={{ fontSize: 11, color: "var(--muted-foreground)" }}>{count} emails</span>
+                      <span style={{ fontSize: 11, color: "var(--muted-foreground)" }}>{mb.id.startsWith("hostinger-") ? "Hostinger catch-all" : `${count} emails`}</span>
                       {count > 0 && <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--foreground)" }} />}
                     </div>
                   </div>

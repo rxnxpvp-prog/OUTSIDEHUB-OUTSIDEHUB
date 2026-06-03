@@ -12,7 +12,7 @@ const PRESENCE_WRITE_THROTTLE_MS = 60_000;
 
 export interface JWTPayload {
   userId: string;
-  role: "admin" | "user";
+  role: "admin" | "moderator" | "user";
 }
 
 export interface AuthRequest extends Request {

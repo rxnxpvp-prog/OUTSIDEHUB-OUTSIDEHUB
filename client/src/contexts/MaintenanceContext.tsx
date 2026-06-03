@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import api from "@/lib/api";
+import { subscribeRealtime } from "@/lib/realtime";
 
 export interface MaintenanceItem {
   id: string;
@@ -36,8 +37,14 @@ export function MaintenanceProvider({ children }: { children: React.ReactNode })
   useEffect(() => {
     fetchMaintenance();
     const handleUpdate = () => fetchMaintenance();
+    const unsubscribe = subscribeRealtime((event) => {
+      if (event.type === "sync" || event.type === "maintenance:changed") fetchMaintenance();
+    });
     window.addEventListener("maintenanceUpdated", handleUpdate);
-    return () => window.removeEventListener("maintenanceUpdated", handleUpdate);
+    return () => {
+      unsubscribe();
+      window.removeEventListener("maintenanceUpdated", handleUpdate);
+    };
   }, []);
 
   const isOnline = (feature: string) => {

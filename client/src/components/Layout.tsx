@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Moon, Sun, Bell, User, LogOut, Settings, ChevronDown, Menu, X } from "lucide-react";
+import { Bell, User, LogOut, Settings, ChevronDown, Menu, X } from "lucide-react";
 import { useLocation } from "wouter";
 import Sidebar from "./Sidebar";
 import RightSidebar from "./RightSidebar";
@@ -41,7 +41,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [showUser, setShowUser] = useState(false);
   const [notifOn, setNotifOn] = useState(() => localStorage.getItem("notif_enabled") !== "false");
 
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const { user, isAuthenticated, logout, isAdmin } = useAuth();
   const [, navigate] = useLocation();
   const notifRef = useRef<HTMLDivElement>(null);
@@ -76,7 +76,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: "var(--background)", color: "var(--foreground)", position: "relative" }}>
+    <div className="app-shell" style={{ display: "flex", height: "100vh", overflow: "hidden", color: "var(--foreground)", position: "relative" }}>
 
       {/* Mobile overlay */}
       {isMobile && sidebarOpen && (
@@ -112,16 +112,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {/* ── Header ── */}
         <header
           style={{
-            height: 56,
+            height: 68,
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             padding: "0 14px",
             flexShrink: 0,
-            borderBottom: "1px solid var(--glass-border)",
-            background: "rgba(8, 8, 12, 0.6)",
-            backdropFilter: "blur(40px) saturate(1.4)",
-            WebkitBackdropFilter: "blur(40px) saturate(1.4)",
+            borderBottom: "1px solid rgba(255,255,255,0.07)",
+            background: "rgba(10, 10, 14, 0.96)",
+            backdropFilter: "blur(20px) saturate(1.15)",
+            WebkitBackdropFilter: "blur(20px) saturate(1.15)",
             position: "relative",
             zIndex: 10,
           }}
@@ -136,75 +136,59 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </button>
           </div>
 
-          {/* Wordmark center — premium liquid glass */}
-          <div style={{ 
-            position: "absolute", 
-            left: "50%", 
-            top: "50%", 
-            transform: "translate(-50%, -50%)", 
-            display: "flex", 
-            alignItems: "center", 
-            justifyContent: "center",
-            zIndex: 100,
-          }}>
-            {/* Brilho refrativo atrás do logo principal */}
-            <div style={{
+          {/* Wordmark WM-01 — chrome bevel */}
+          <div
+            style={{
               position: "absolute",
-              width: 200,
-              height: 100,
-              background: "radial-gradient(circle, var(--accent-glow) 0%, transparent 70%)",
-              opacity: 0.5,
-              pointerEvents: "none",
-              zIndex: -1,
-              filter: "blur(20px)",
-            }} />
-            
-            <img 
-              src="/logo_text.png"
-              alt="OUTSIDE HUB"
-              className="logo-pulse"
-              style={{ 
-                height: 130, // Ajustado para ser grande mas harmônico
-                objectFit: "contain", 
-                mixBlendMode: "screen",
-                filter: "var(--logo-filter)",
-                transition: "transform 0.4s cubic-bezier(.22,1,.36,1), filter 0.4s ease",
-                transform: "scale(1)",
-                cursor: "pointer",
-                marginTop: 25, // Invasão sutil no conteúdo
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.08)"}
-              onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
-              onError={(e) => { 
-                e.currentTarget.style.display = "none"; 
-                if (e.currentTarget.nextElementSibling) {
-                    (e.currentTarget.nextElementSibling as HTMLElement).style.display = "flex";
-                }
-              }}
-            />
-            {/* Fallback texto caso a imagem não exista */}
-            <span 
-              style={{
-                display: "none",
-                fontSize: 15,
-                fontWeight: 800,
-                letterSpacing: "-0.04em",
-                color: "var(--foreground)",
-                whiteSpace: "nowrap",
-                opacity: 0.85,
-              }}
-            >
-              OUTSIDE HUB
+              left: "50%",
+              top: "50%",
+              transform: "translate(-50%, -50%)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 1,
+              userSelect: "none",
+              cursor: "default",
+              zIndex: 100,
+              transition: "transform 0.4s cubic-bezier(.22,1,.36,1)",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = "translate(-50%, -50%) scale(1.04)")}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = "translate(-50%, -50%) scale(1)")}
+          >
+            <span style={{
+              fontFamily: "'Saira Condensed', 'Arial Narrow', sans-serif",
+              fontWeight: 800,
+              fontSize: 30,
+              letterSpacing: "0.005em",
+              textTransform: "uppercase",
+              lineHeight: 1,
+              background: "linear-gradient(180deg, #3a3a3a 0%, #8c8c8c 22%, #d4d4d4 38%, #f2f2f2 50%, #d0d0d0 62%, #888 78%, #444 100%)",
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.7)) drop-shadow(0 0 18px rgba(200,210,255,0.12))",
+            }}>
+              OUTSIDEHUB
+            </span>
+            <span style={{
+              fontFamily: "'Noto Sans JP', sans-serif",
+              fontWeight: 300,
+              fontSize: 9,
+              letterSpacing: "0.45em",
+              color: "rgba(180,184,200,0.55)",
+              textTransform: "none",
+              lineHeight: 1,
+              paddingLeft: "0.45em",
+            }}>
+              外部ハブ
             </span>
           </div>
 
           {/* Right actions */}
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
 
-            {/* Theme */}
-            <button onClick={toggleTheme} className="hdr-btn">
-              {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
+
 
             {/* Bell — amarelinho sutil */}
             <div style={{ position: "relative" }} ref={notifRef}>
@@ -226,7 +210,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   maxWidth: 320, zIndex: 50,
                 }}>
                   <div style={{ padding: "10px 14px", borderBottom: "1px solid var(--border)" }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: "-0.02em", color: "var(--muted-foreground)" }}>Notificações</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: "-0.02em", color: "var(--muted-foreground)" }}>Notifications</span>
                   </div>
                   <div style={{ maxHeight: 280, overflowY: "auto" }}>
                     {notifications.length > 0 ? notifications.map((n: any) => (
@@ -236,7 +220,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       </div>
                     )) : (
                       <div style={{ padding: "28px 14px", textAlign: "center" }}>
-                        <p style={{ fontSize: 12, color: "var(--muted-foreground)" }}>Nenhuma notificação</p>
+                        <p style={{ fontSize: 12, color: "var(--muted-foreground)" }}>No notifications</p>
                       </div>
                     )}
                   </div>
@@ -275,13 +259,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 }}>
                   <div style={{ padding: "10px 14px", borderBottom: "1px solid var(--border)" }}>
                     <p style={{ fontSize: 13, fontWeight: 600, letterSpacing: "-0.02em", color: "var(--foreground)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user?.name}</p>
-                    <p style={{ fontSize: 11, marginTop: 2, color: "var(--muted-foreground)" }}>{user?.role === "admin" ? "Admin" : "Membro"}</p>
+                    <p style={{ fontSize: 11, marginTop: 2, color: "var(--muted-foreground)" }}>{user?.role === "admin" ? "Admin" : "User"}</p>
                   </div>
 
                   <div style={{ padding: "4px 0" }}>
                     {[
-                      { label: "Meu Perfil", icon: User, action: () => { setShowUser(false); navigate("/profile"); } },
-                      { label: "Privacidade", icon: Settings, action: () => { setShowUser(false); navigate("/privacy"); } },
+                      { label: "My Profile", icon: User, action: () => { setShowUser(false); navigate("/profile"); } },
+                      { label: "Privacy", icon: Settings, action: () => { setShowUser(false); navigate("/privacy"); } },
                     ].map(({ label, icon: Icon, action }) => (
                       <button key={label} style={menuItem} onClick={action}
                         onMouseEnter={(e) => { e.currentTarget.style.background = "var(--glass-bg)"; }}
@@ -318,7 +302,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                         <Bell size={13} style={{ color: "var(--muted-foreground)", flexShrink: 0 }} />
-                        Notificações
+                        Notifications
                       </div>
                       <div style={{
                         width: 28, height: 16, borderRadius: 8,
@@ -347,7 +331,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                     >
                       <LogOut size={13} style={{ flexShrink: 0 }} />
-                      Sair
+                      Sign out
                     </button>
                   </div>
                 </div>
@@ -358,7 +342,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
         {/* Content */}
         <main style={{ flex: 1, overflowY: "auto" }}>
-          <div style={{ padding: isMobile ? "16px 12px" : 20, maxWidth: 1280, margin: "0 auto" }}>
+          <div style={{ padding: isMobile ? "20px 12px 16px" : "34px 20px 20px", maxWidth: 1280, margin: "0 auto" }}>
             {children}
           </div>
         </main>
@@ -366,6 +350,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Right sidebar */}
       {!isMobile && !isTablet && <RightSidebar />}
+
     </div>
   );
 }

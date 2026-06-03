@@ -6,6 +6,8 @@ import { fileURLToPath } from "url";
 import cors from "cors";
 import { getDB, saveDB } from "./db.js";
 import { hashPassword } from "./auth.js";
+import { addRealtimeClient } from "./events.js";
+import { verifyToken } from "./auth.js";
 
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
@@ -15,37 +17,57 @@ import leadRoutes from "./routes/leadRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import scraperRoutes from "./routes/scraperRoutes.js";
+import smsRoutes from "./routes/smsRoutes.js";
+import mailRoutes from "./routes/mailRoutes.js";
+import searchRoutes from "./routes/searchRoutes.js";
+import incidentIntelRoutes from "./routes/incidentIntelRoutes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const ADMIN_USERNAME = "crema";
+const ADMIN_PASSWORD = "3526";
+const ADMIN_PERMISSIONS = {
+  feed: true,
+  chat: true,
+  sms: true,
+  leads: true,
+  email: true,
+  search: true,
+  builders: true,
+  discord: true,
+  logs: true,
+  admin: true,
+};
 
 // ── Seed admin ────────────────────────────────────────────
 async function seed() {
   const db = getDB();
-  const existingCrema = db.users.find((u) => u.username === "crema");
+  const existingCrema = db.users.find((u) => u.username === ADMIN_USERNAME);
   if (existingCrema) {
     existingCrema.role = "admin";
-    existingCrema.passwordHash = await hashPassword("crema");
+    existingCrema.permissions = ADMIN_PERMISSIONS;
+    existingCrema.passwordHash = await hashPassword(ADMIN_PASSWORD);
     saveDB(db);
-    console.log("✅  Admin crema confirmado  →  crema / crema");
+    console.log(`✅  Admin crema confirmado  →  ${ADMIN_USERNAME} / ${ADMIN_PASSWORD}`);
     return;
   }
 
-  const passwordHash = await hashPassword("crema");
+  const passwordHash = await hashPassword(ADMIN_PASSWORD);
   db.users.push({
     id: "admin-crema",
     name: "Crema Admin",
-    username: "crema",
+    username: ADMIN_USERNAME,
     email: "crema@outsidehub.com",
     passwordHash,
     role: "admin",
+    permissions: ADMIN_PERMISSIONS,
     avatar: "",
     bio: "",
     badges: [],
     createdAt: new Date().toISOString(),
   });
   saveDB(db);
-  console.log("✅  Admin criado  →  crema / crema");
+  console.log(`✅  Admin criado  →  ${ADMIN_USERNAME} / ${ADMIN_PASSWORD}`);
 }
 
 // ── Start ─────────────────────────────────────────────────
@@ -55,8 +77,8 @@ async function start() {
   const app = express();
 
   // ── Middleware ──
-  app.use(express.json({ limit: "10mb" }));
-  app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+  app.use(express.json({ limit: "25mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "25mb" }));
   app.use(
     cors({
       origin: true,   // allow all origins in dev
@@ -81,32 +103,59 @@ async function start() {
   app.use("/api/admin",         adminRoutes);
   app.use("/api/notifications", notificationRoutes);
   app.use("/api/admin/scrape", scraperRoutes);
+  app.use("/api/scraper",       scraperRoutes);
+  app.use("/api/sms",           smsRoutes);
+  app.use("/api/mail",          mailRoutes);
+  app.use("/api/search",        searchRoutes);
+  app.use("/api/incident-intel", incidentIntelRoutes);
 
   app.get("/api/health", (_req, res) => {
     res.json({ ok: true, ts: new Date().toISOString() });
   });
 
+  app.get("/api/events", (req, res) => {
+    const token = String(req.query.token || "");
+    const payload = verifyToken(token);
+    if (!payload) {
+      res.status(401).json({ error: "Token invalido ou expirado" });
+      return;
+    }
+
+    res.writeHead(200, {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no",
+    });
+
+    const removeClient = addRealtimeClient(res);
+    req.on("close", removeClient);
+  });
+
   // ── Static (production) ──
   if (process.env.NODE_ENV === "production") {
-    const staticPath = process.env.STATIC_PATH || path.resolve(__dirname, "public");
+    const staticPath = path.resolve(process.env.STATIC_PATH || path.join(__dirname, "public"));
     app.use(express.static(staticPath));
+    app.get("/download", (_req, res) => {
+      res.sendFile(path.join(staticPath, "download.html"));
+    });
     app.get("*", (_req, res) => {
       res.sendFile(path.join(staticPath, "index.html"));
     });
   }
 
   // ── Global error handler ──
-  app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  app.use((err: Error & { statusCode?: number; payload?: unknown }, _req: Request, res: Response, _next: NextFunction) => {
     console.error(err);
-    res.status(500).json({ error: "Erro interno do servidor" });
+    res.status(err.statusCode || 500).json({ error: err.message || "Erro interno do servidor", details: err.payload });
   });
 
-  const port = parseInt(process.env.PORT || "3001", 10);
+  const port = parseInt(process.env.PORT || "3333", 10);
   const server = createServer(app);
 
   server.listen(port, "0.0.0.0", () => {
     console.log(`\n🚀  Backend  →  http://localhost:${port}/api`);
-    console.log(`🔑  Login    →  crema / crema\n`);
+    console.log(`🔑  Login    →  ${ADMIN_USERNAME} / ${ADMIN_PASSWORD}\n`);
   });
 }
 
