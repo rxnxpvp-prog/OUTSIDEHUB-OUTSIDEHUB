@@ -101,7 +101,7 @@ export default function Login() {
             <div className="login-terminal-body">
               <div className="login-command">
                 <span>$</span>
-                outsidehub --open-gate
+                outsidehub --open-gatee
               </div>
               <div className="login-access-mask">
                 <span />
@@ -227,9 +227,9 @@ export default function Login() {
             )}
 
             <label className="login-field">
-                <span>
-                  <UserRound size={13} />
-                  User
+              <span>
+                <UserRound size={13} />
+                User
               </span>
               <input
                 type="text"
