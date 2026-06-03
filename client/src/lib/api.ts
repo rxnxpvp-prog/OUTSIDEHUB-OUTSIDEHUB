@@ -1,18 +1,24 @@
 import axios from "axios";
 
-// In production/Electron, the frontend may be loaded from a URL that doesn't
-// include the backend port (e.g. http://3.138.184.70 instead of :3333).
-// Detect this and build the correct absolute API URL.
+// Resolves the correct API base URL depending on the environment:
+// - Real domain with reverse proxy (outsidenetworking.com, etc.) → "/api" (relative)
+// - Raw IP address without reverse proxy (e.g. 3.138.184.70:80) → "http://ip:3333/api"
+// - Port 3333 already explicit → "/api" (relative)
 function resolveBaseUrl(): string {
   if (typeof window === "undefined") return "/api";
   const { protocol, hostname, port } = window.location;
-  // If already on port 3333, use relative path (standard production setup)
+
+  // Already on the backend port — use relative
   if (port === "3333") return "/api";
-  // If on port 80/443 or no port (Electron loading remote), target :3333 explicitly
-  const effectivePort = port || (protocol === "https:" ? "443" : "80");
-  if (effectivePort === "80" || effectivePort === "443" || effectivePort === "") {
+
+  // If hostname is a raw IPv4 address and not already on :3333,
+  // the app is likely behind no reverse proxy → target :3333 explicitly
+  const isRawIP = /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname);
+  if (isRawIP) {
     return `${protocol}//${hostname}:3333/api`;
   }
+
+  // Real domain (with or without reverse proxy) — always use relative path
   return "/api";
 }
 

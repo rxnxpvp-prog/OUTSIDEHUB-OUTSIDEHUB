@@ -1,4 +1,4 @@
-﻿const path = require("path");
+const path = require("path");
 const fs = require("fs");
 const { app, BrowserWindow, Menu, shell, ipcMain, Notification, dialog } = require("electron");
 const { Readable } = require("stream");
@@ -11,7 +11,7 @@ const STATIC_PATH = path.join(DIST_DIR, "public");
 const SERVER_ENTRY = path.join(DIST_DIR, "electron-server", "index.cjs");
 const PORT = process.env.PORT || "3335";
 const LOCAL_CLIENT_URL = `http://127.0.0.1:${PORT}`;
-const CLIENT_URL = process.env.OUTSIDEHUB_DESKTOP_URL || "https://www.outsidehub.com.br";
+const CLIENT_URL = process.env.OUTSIDEHUB_DESKTOP_URL || "https://outsidenetworking.com";
 const USE_LOCAL_SERVER = process.env.OUTSIDEHUB_USE_LOCAL_SERVER === "1";
 
 let mainWindow = null;

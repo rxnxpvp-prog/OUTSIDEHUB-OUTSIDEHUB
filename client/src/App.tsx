@@ -74,9 +74,10 @@ function AppShell() {
   const hostname = window.location.hostname;
   const hostParts = hostname.split('.');
   const rootDomains = [
+    "outsidenetworking.com",
+    "www.outsidenetworking.com",
     "outsidehub.com.br",
     "www.outsidehub.com.br",
-    "outsidehubpriv.pages.dev",
   ];
   const isLocalHost =
     hostname === "localhost" ||
@@ -100,8 +101,9 @@ function AppShell() {
     !isIPAddress &&
     !isTunnelHost &&
     (
+      (hostname.endsWith(".outsidenetworking.com") && hostParts.length > 3) ||
       (hostname.endsWith(".outsidehub.com.br") && hostParts.length > 3) ||
-      (!hostname.endsWith(".outsidehub.com.br") && hostParts.length > 2)
+      (!hostname.endsWith(".outsidenetworking.com") && !hostname.endsWith(".outsidehub.com.br") && hostParts.length > 2)
     ) &&
     !ignoredSubdomains.includes(hostParts[0].toLowerCase());
   

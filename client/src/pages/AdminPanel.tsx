@@ -145,8 +145,8 @@ export default function AdminPanel() {
     clientId: "",
     clientSecret: "",
     clientSecretSet: false,
-    redirectUri: "https://www.outsidehub.com.br/api/auth/discord/callback",
-    clientUrl: "https://www.outsidehub.com.br",
+    redirectUri: "https://outsidenetworking.com/api/auth/discord/callback",
+    clientUrl: "https://outsidenetworking.com",
     rpcDetails: "OutsideHub",
     rpcState: "Online",
   });
@@ -163,7 +163,7 @@ export default function AdminPanel() {
   const [desktopForm, setDesktopForm] = useState({
     version: "1.0.2",
     downloadUrl: "https://github.com/rxnxpvp-prog/OUTSIDEHUB-V1/releases/download/v1/OutsideHub.exe",
-    loginUrl: "https://www.outsidehub.com.br/login",
+    loginUrl: "https://outsidenetworking.com/login",
     notes: "OutsideHub desktop update",
   });
 
