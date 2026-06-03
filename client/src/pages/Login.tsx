@@ -101,7 +101,7 @@ export default function Login() {
             <div className="login-terminal-body">
               <div className="login-command">
                 <span>$</span>
-                outsidehub --open-gatee
+                outsidehub --open-gate
               </div>
               <div className="login-access-mask">
                 <span />
