@@ -293,7 +293,7 @@ export default function Login() {
           </button>
 
           <button type="button" onClick={toggleMode} className="login-mode-toggle">
-            {isRegister ? "Voltar para login do crema" : "Criar conta com codigo de convidado"}
+            {isRegister ? "Return to login" : "Invite code"}
           </button>
         </form>
       </section>
