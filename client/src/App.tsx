@@ -83,6 +83,8 @@ function AppShell() {
     hostname === "0.0.0.0" ||
     hostname === "::1" ||
     /^127(?:\.\d{1,3}){3}$/.test(hostname);
+  // Raw IPv4 addresses (e.g. 3.138.184.70) must never be treated as subdomains
+  const isIPAddress = /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname);
   const tunnelHostSuffixes = [
     "trycloudflare.com",
     "loca.lt",
@@ -95,6 +97,7 @@ function AppShell() {
   const isSubdomain =
     !knownRoot &&
     !isLocalHost &&
+    !isIPAddress &&
     !isTunnelHost &&
     (
       (hostname.endsWith(".outsidehub.com.br") && hostParts.length > 3) ||
