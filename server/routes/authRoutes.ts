@@ -12,6 +12,7 @@ import {
   verifyToken,
 } from "../auth.js";
 import { emitRealtime } from "../events.js";
+import { isSupremeUsername, lockSupremeUser } from "../supreme.js";
 
 const router = Router();
 const RESERVED_USERNAMES = new Set(["admin", "api", "www", "login", "profile", "discord"]);
@@ -59,7 +60,7 @@ function buildSafeUser(user: any) {
 }
 
 function getDisplayRole(user: any) {
-  if (String(user?.username || "").toLowerCase() === "crema") return "CEO";
+  if (isSupremeUsername(user?.username)) return "CEO";
   if (user?.role === "admin") return "ADMIN";
   if (user?.role === "moderator") return "MODERATOR";
   return "USUARIO";
@@ -128,7 +129,7 @@ router.post("/login", async (req, res) => {
       (u) =>
         u.username?.toLowerCase() === loginId ||
         u.email?.toLowerCase() === loginId
-    ) || db.users.find((u) => u.name?.trim().toLowerCase() === loginId);
+    );
 
     if (!user) {
       res.status(401).json({ error: "Usuário ou senha inválidos" });
@@ -641,6 +642,7 @@ router.put("/profile", requireAuth, async (req: AuthRequest, res) => {
         url: String(p.url || "")
       }));
     }
+    lockSupremeUser(db.users[idx]);
     
     saveDB(db);
     emitRealtime({ type: "users:changed", userId: db.users[idx].id });

@@ -3,15 +3,16 @@ import { getDB, saveDB } from "../db.js";
 import { requireAdmin } from "../auth.js";
 import { nanoid } from "nanoid";
 import { emitRealtime } from "../events.js";
+import { isSupremeUsername } from "../supreme.js";
 
 const router = Router();
 
-function requireCrema(req: any, res: any, next: any) {
+function requireSupreme(req: any, res: any, next: any) {
   requireAdmin(req, res, () => {
     const db = getDB();
     const user = db.users.find((item) => item.id === req.user?.userId);
-    if (user?.username !== "crema") {
-      res.status(403).json({ error: "Apenas crema pode alterar Discord" });
+    if (!isSupremeUsername(user?.username)) {
+      res.status(403).json({ error: "Apenas 540 pode alterar estas configuracoes" });
       return;
     }
     next();
@@ -242,7 +243,7 @@ router.put("/smtp", requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
-router.put("/discord", requireCrema, (req, res) => {
+router.put("/discord", requireSupreme, (req, res) => {
   const { clientId, clientSecret, redirectUri, clientUrl, rpcDetails, rpcState } = req.body;
   const db = getDB();
   db.discordConfig = db.discordConfig || {
@@ -275,7 +276,7 @@ router.put("/discord", requireCrema, (req, res) => {
   });
 });
 
-router.put("/hostinger-alias", requireCrema, (req, res) => {
+router.put("/hostinger-alias", requireSupreme, (req, res) => {
   const { domain, inboxEmail, inboxPassword, imapHost, imapPort } = req.body;
   const db = getDB();
   db.hostingerAliasConfig = db.hostingerAliasConfig || {
@@ -307,7 +308,7 @@ router.put("/hostinger-alias", requireCrema, (req, res) => {
   });
 });
 
-router.put("/desktop", requireCrema, (req, res) => {
+router.put("/desktop", requireSupreme, (req, res) => {
   const { version, downloadUrl, loginUrl, notes } = req.body;
   const db = getDB();
   db.desktopConfig = db.desktopConfig || {

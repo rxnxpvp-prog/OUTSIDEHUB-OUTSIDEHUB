@@ -225,7 +225,7 @@ export default function PublicProfile({ identifierParam }: { identifierParam?: s
   const nid = user.accessCode || "OH-000";
   const perm = isSupremeUsername(user.username) ? "CEO" : permissionLabel(user.role, user.badges);
   const allBadges = user.badges || [];
-  const visibleUser = (user.name || "").trim() || user.username;
+  const visibleUser = user.username;
   const publicUrl = mainUrl ? `${mainUrl}/${user.username}` : `/${user.username}`;
   const visibleLinks = (user.links || [])
     .map((link) => ({ ...link, url: safeHref(link.url) }))

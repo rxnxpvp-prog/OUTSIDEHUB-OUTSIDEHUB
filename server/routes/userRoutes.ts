@@ -3,36 +3,22 @@ import { getDB, saveDB } from "../db.js";
 import { requireAuth, requireAdmin, hashPassword, type AuthRequest } from "../auth.js";
 import { nanoid } from "nanoid";
 import { emitRealtime } from "../events.js";
+import { isSupremeUsername, lockSupremeUser } from "../supreme.js";
 
 const router = Router();
-const CREMA_USERNAME = "crema";
-const CREMA_PERMISSIONS = {
-  feed: true,
-  chat: true,
-  sms: true,
-  leads: true,
-  email: true,
-  search: true,
-  builders: true,
-  discord: true,
-  logs: true,
-  admin: true,
-};
 
-function isCrema(user: { username?: string } | undefined) {
-  return user?.username?.toLowerCase() === CREMA_USERNAME;
+function isSupreme(user: { username?: string } | undefined) {
+  return isSupremeUsername(user?.username);
 }
 
-function lockCrema(user: any) {
-  if (!isCrema(user)) return;
-  user.role = "admin";
-  user.permissions = CREMA_PERMISSIONS;
+function lockSupreme(user: any) {
+  lockSupremeUser(user);
 }
 
 function canManageBadges(req: AuthRequest) {
   const db = getDB();
   const current = db.users.find((u) => u.id === req.user?.userId);
-  return isCrema(current);
+  return isSupreme(current);
 }
 
 function accessCodeForUser(db: ReturnType<typeof getDB>, userId: string): string {
@@ -144,8 +130,8 @@ router.post("/", requireAdmin, async (req, res) => {
 
   const trimmedUsername = String(username).trim().toLowerCase();
   const db = getDB();
-  if (trimmedUsername === CREMA_USERNAME) {
-    res.status(409).json({ error: "crema e uma conta suprema reservada" });
+  if (isSupremeUsername(trimmedUsername)) {
+    res.status(409).json({ error: "540 e aliases antigos sao contas supremas reservadas" });
     return;
   }
 
@@ -192,8 +178,8 @@ router.delete("/:id", requireAdmin, (req: AuthRequest, res) => {
     res.status(404).json({ error: "Usuário não encontrado" });
     return;
   }
-  if (isCrema(db.users[idx])) {
-    res.status(403).json({ error: "crema e supremo e nao pode ser removido" });
+  if (isSupreme(db.users[idx])) {
+    res.status(403).json({ error: "540 e supremo e nao pode ser removido" });
     return;
   }
   db.users.splice(idx, 1);
@@ -214,11 +200,11 @@ router.put("/:id/role", requireAdmin, (req, res) => {
     res.status(404).json({ error: "Usuário não encontrado" });
     return;
   }
-  if (isCrema(db.users[idx])) {
-    lockCrema(db.users[idx]);
+  if (isSupreme(db.users[idx])) {
+    lockSupreme(db.users[idx]);
     saveDB(db);
     const { passwordHash, ...safe } = db.users[idx];
-    res.status(403).json({ error: "crema e supremo: cargo e permissoes nao podem ser alterados", user: safe });
+    res.status(403).json({ error: "540 e supremo: cargo e permissoes nao podem ser alterados", user: safe });
     return;
   }
   db.users[idx].role = role;
@@ -242,7 +228,7 @@ router.post("/:id/badges", requireAdmin, (req: AuthRequest, res) => {
     return;
   }
   if (!canManageBadges(req)) {
-    res.status(403).json({ error: "Apenas crema pode adicionar badges" });
+    res.status(403).json({ error: "Apenas 540 pode adicionar badges" });
     return;
   }
   if (db.users[idx].badges.length >= 10) {
@@ -275,7 +261,7 @@ router.put("/:id/badges/:badgeId", requireAdmin, (req: AuthRequest, res) => {
     return;
   }
   if (!canManageBadges(req)) {
-    res.status(403).json({ error: "Apenas crema pode editar badges" });
+    res.status(403).json({ error: "Apenas 540 pode editar badges" });
     return;
   }
   const badgeIdx = db.users[idx].badges.findIndex((b) => b.id === req.params.badgeId);
@@ -305,7 +291,7 @@ router.delete("/:id/badges/:badgeId", requireAdmin, (req: AuthRequest, res) => {
     return;
   }
   if (!canManageBadges(req)) {
-    res.status(403).json({ error: "Apenas crema pode remover badges" });
+    res.status(403).json({ error: "Apenas 540 pode remover badges" });
     return;
   }
   db.users[idx].badges = db.users[idx].badges.filter((b) => b.id !== req.params.badgeId);

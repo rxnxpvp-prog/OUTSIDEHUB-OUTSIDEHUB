@@ -1,5 +1,5 @@
 export function isSupremeUsername(username?: string) {
-  return String(username || "").trim().toLowerCase() === "crema";
+  return String(username || "").trim().toLowerCase() === "540";
 }
 
 export function roleLabel(role?: string, username?: string): string {

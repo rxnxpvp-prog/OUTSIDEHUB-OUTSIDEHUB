@@ -8,6 +8,7 @@ import { getDB, saveDB } from "./db.js";
 import { hashPassword } from "./auth.js";
 import { addRealtimeClient } from "./events.js";
 import { verifyToken } from "./auth.js";
+import { SUPREME_PERMISSIONS, SUPREME_USERNAME, consolidateSupremeUsers } from "./supreme.js";
 
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
@@ -24,50 +25,35 @@ import incidentIntelRoutes from "./routes/incidentIntelRoutes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const ADMIN_USERNAME = "crema";
 const ADMIN_PASSWORD = "3526";
-const ADMIN_PERMISSIONS = {
-  feed: true,
-  chat: true,
-  sms: true,
-  leads: true,
-  email: true,
-  search: true,
-  builders: true,
-  discord: true,
-  logs: true,
-  admin: true,
-};
 
 // ── Seed admin ────────────────────────────────────────────
 async function seed() {
   const db = getDB();
-  const existingCrema = db.users.find((u) => u.username === ADMIN_USERNAME);
-  if (existingCrema) {
-    existingCrema.role = "admin";
-    existingCrema.permissions = ADMIN_PERMISSIONS;
-    existingCrema.passwordHash = await hashPassword(ADMIN_PASSWORD);
+  const existingSupreme = consolidateSupremeUsers(db);
+  if (existingSupreme) {
     saveDB(db);
-    console.log(`✅  Admin crema confirmado  →  ${ADMIN_USERNAME} / ${ADMIN_PASSWORD}`);
+    console.log(`✅  CEO confirmado  →  ${SUPREME_USERNAME}`);
     return;
   }
 
   const passwordHash = await hashPassword(ADMIN_PASSWORD);
   db.users.push({
-    id: "admin-crema",
-    name: "Crema Admin",
-    username: ADMIN_USERNAME,
-    email: "crema@outsidehub.com",
+    id: "admin-540",
+    name: SUPREME_USERNAME,
+    username: SUPREME_USERNAME,
+    email: "540@outsidehub.com",
     passwordHash,
     role: "admin",
-    permissions: ADMIN_PERMISSIONS,
+    permissions: SUPREME_PERMISSIONS,
     avatar: "",
     bio: "",
     badges: [],
     createdAt: new Date().toISOString(),
+    isPublic: true,
   });
   saveDB(db);
-  console.log(`✅  Admin criado  →  ${ADMIN_USERNAME} / ${ADMIN_PASSWORD}`);
+  console.log(`✅  CEO criado  →  ${SUPREME_USERNAME} / ${ADMIN_PASSWORD}`);
 }
 
 // ── Start ─────────────────────────────────────────────────
@@ -163,7 +149,7 @@ async function start() {
 
   server.listen(port, "0.0.0.0", () => {
     console.log(`\n🚀  Backend  →  http://localhost:${port}/api`);
-    console.log(`🔑  Login    →  ${ADMIN_USERNAME} / ${ADMIN_PASSWORD}\n`);
+    console.log(`🔑  Login    →  ${SUPREME_USERNAME} / ${ADMIN_PASSWORD}\n`);
   });
 }
 

@@ -980,7 +980,7 @@ export default function AdminPanel() {
           ) : (
             users.map((u) => {
               const isSupreme = isSupremeUsername(u.username);
-              const canManageBadges = me?.username?.toLowerCase() === "crema";
+              const canManageBadges = isSupremeUsername(me?.username);
               return (
               <div
                 key={u.id}
@@ -1049,7 +1049,7 @@ export default function AdminPanel() {
                       style={{ color: "var(--muted-foreground)", opacity: canManageBadges ? 1 : 0.35, cursor: canManageBadges ? "pointer" : "not-allowed" }}
                       onMouseEnter={(e) => (e.currentTarget.style.color = "var(--foreground)")}
                       onMouseLeave={(e) => (e.currentTarget.style.color = "var(--muted-foreground)")}
-                      title={canManageBadges ? "Badges" : "Apenas crema pode editar badges"}
+                      title={canManageBadges ? "Badges" : "Apenas 540 pode editar badges"}
                     >
                       <Award size={14} />
                     </button>
