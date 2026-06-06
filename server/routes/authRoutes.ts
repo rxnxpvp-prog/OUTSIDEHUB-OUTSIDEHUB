@@ -14,6 +14,11 @@ import {
 import { emitRealtime } from "../events.js";
 
 const router = Router();
+const RESERVED_USERNAMES = new Set(["admin", "api", "www", "login", "profile", "discord"]);
+
+function normalizeUsername(value: unknown) {
+  return String(value || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 24);
+}
 
 function getDiscordConfig() {
   const db = getDB();
@@ -577,12 +582,32 @@ router.post("/2fa/disable", requireAuth, async (req: AuthRequest, res) => {
 // PUT /api/auth/profile
 router.put("/profile", requireAuth, async (req: AuthRequest, res) => {
   try {
-    const { name, bio, avatar, customSubdomain, links, isPublic, status, skills, projects, tags } = req.body ?? {};
+    const { username, name, bio, avatar, customSubdomain, links, isPublic, skills, projects, tags } = req.body ?? {};
     const db = getDB();
     const idx = db.users.findIndex((u) => u.id === req.user!.userId);
     if (idx === -1) {
       res.status(404).json({ error: "Usuário não encontrado" });
       return;
+    }
+    if (username !== undefined) {
+      const nextUsername = normalizeUsername(username);
+      if (nextUsername.length < 3) {
+        res.status(400).json({ error: "Username precisa ter pelo menos 3 caracteres" });
+        return;
+      }
+      if (RESERVED_USERNAMES.has(nextUsername)) {
+        res.status(409).json({ error: "Username reservado" });
+        return;
+      }
+      if (db.users.find((u) => u.id !== req.user!.userId && u.username?.toLowerCase() === nextUsername)) {
+        res.status(409).json({ error: "Username ja em uso" });
+        return;
+      }
+      if (db.users.find((u) => u.id !== req.user!.userId && u.customSubdomain?.toLowerCase() === nextUsername)) {
+        res.status(409).json({ error: "Username conflita com um subdominio em uso" });
+        return;
+      }
+      db.users[idx].username = nextUsername;
     }
     if (name !== undefined) db.users[idx].name = String(name).trim() || db.users[idx].name;
     if (bio !== undefined) db.users[idx].bio = String(bio);
@@ -594,6 +619,10 @@ router.put("/profile", requireAuth, async (req: AuthRequest, res) => {
         res.status(409).json({ error: "Subdomínio já em uso" });
         return;
       }
+      if (sub && db.users.find(u => u.username?.toLowerCase() === sub && u.id !== req.user!.userId)) {
+        res.status(409).json({ error: "Subdominio conflita com um username em uso" });
+        return;
+      }
       db.users[idx].customSubdomain = sub || undefined;
     }
     
@@ -602,7 +631,6 @@ router.put("/profile", requireAuth, async (req: AuthRequest, res) => {
     }
     
     if (isPublic !== undefined) db.users[idx].isPublic = Boolean(isPublic);
-    if (status !== undefined) db.users[idx].status = String(status).trim() || undefined;
     if (skills !== undefined && Array.isArray(skills)) db.users[idx].skills = skills.map(String);
     if (tags !== undefined && Array.isArray(tags)) db.users[idx].tags = tags.map(String);
     if (projects !== undefined && Array.isArray(projects)) {

@@ -35,13 +35,13 @@ router.get("/maintenance/public", (_req, res) => {
 router.get("/desktop/public", (_req, res) => {
   const db = getDB();
   const cfg = db.desktopConfig || {
-    version: "1.0.2",
-    downloadUrl: "https://github.com/rxnxpvp-prog/OUTSIDEHUB-V1/releases/download/v1/OutsideHub.exe",
+    version: "1.0.4",
+    downloadUrl: "https://github.com/rxnxpvp-prog/OUTSIDEHUB-OUTSIDEHUB/releases/download/v1/OutsideHub.exe",
     loginUrl: "https://www.outsidehub.com.br/login",
     notes: "OutsideHub desktop update",
   };
   res.json({
-    version: cfg.version || "1.0.2",
+    version: cfg.version || "1.0.4",
     downloadUrl: cfg.downloadUrl || "",
     loginUrl: cfg.loginUrl || "https://www.outsidehub.com.br/login",
     notes: cfg.notes || "",
@@ -75,8 +75,8 @@ router.get("/settings", requireAdmin, (req, res) => {
       imapPort: db.hostingerAliasConfig?.imapPort || "993",
     },
     desktopConfig: {
-      version: db.desktopConfig?.version || "1.0.2",
-      downloadUrl: db.desktopConfig?.downloadUrl || "https://github.com/rxnxpvp-prog/OUTSIDEHUB-V1/releases/download/v1/OutsideHub.exe",
+      version: db.desktopConfig?.version || "1.0.4",
+      downloadUrl: db.desktopConfig?.downloadUrl || "https://github.com/rxnxpvp-prog/OUTSIDEHUB-OUTSIDEHUB/releases/download/v1/OutsideHub.exe",
       loginUrl: db.desktopConfig?.loginUrl || "https://www.outsidehub.com.br/login",
       notes: db.desktopConfig?.notes || "",
     },
@@ -311,13 +311,13 @@ router.put("/desktop", requireCrema, (req, res) => {
   const { version, downloadUrl, loginUrl, notes } = req.body;
   const db = getDB();
   db.desktopConfig = db.desktopConfig || {
-    version: "1.0.2",
-    downloadUrl: "https://github.com/rxnxpvp-prog/OUTSIDEHUB-V1/releases/download/v1/OutsideHub.exe",
+    version: "1.0.4",
+    downloadUrl: "https://github.com/rxnxpvp-prog/OUTSIDEHUB-OUTSIDEHUB/releases/download/v1/OutsideHub.exe",
     loginUrl: "https://www.outsidehub.com.br/login",
     notes: "OutsideHub desktop update",
   };
 
-  if (version !== undefined) db.desktopConfig.version = String(version).trim() || "1.0.2";
+  if (version !== undefined) db.desktopConfig.version = String(version).trim() || "1.0.4";
   if (downloadUrl !== undefined) db.desktopConfig.downloadUrl = String(downloadUrl).trim();
   if (loginUrl !== undefined) db.desktopConfig.loginUrl = String(loginUrl).trim() || "https://www.outsidehub.com.br/login";
   if (notes !== undefined) db.desktopConfig.notes = String(notes).trim();

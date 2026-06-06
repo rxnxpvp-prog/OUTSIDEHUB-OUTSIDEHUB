@@ -161,8 +161,8 @@ export default function AdminPanel() {
   });
   const [desktopSaving, setDesktopSaving] = useState(false);
   const [desktopForm, setDesktopForm] = useState({
-    version: "1.0.2",
-    downloadUrl: "https://github.com/rxnxpvp-prog/OUTSIDEHUB-V1/releases/download/v1/OutsideHub.exe",
+    version: "1.0.4",
+    downloadUrl: "https://github.com/rxnxpvp-prog/OUTSIDEHUB-OUTSIDEHUB/releases/download/v1/OutsideHub.exe",
     loginUrl: "https://outsidenetworking.com/login",
     notes: "OutsideHub desktop update",
   });
@@ -733,7 +733,7 @@ export default function AdminPanel() {
       <Section title="Desktop App / Updates" icon={Download}>
         <div className="space-y-3">
           <div className="grid md:grid-cols-2 gap-2">
-            <input className={inp} style={inpStyle} placeholder="Versao atual, ex: 1.0.2"
+            <input className={inp} style={inpStyle} placeholder="Versao atual, ex: 1.0.4"
               value={desktopForm.version} onChange={(e) => setDesktopForm({ ...desktopForm, version: e.target.value })}
               onFocus={inpFocus} onBlur={inpBlur} />
             <input className={inp} style={inpStyle} placeholder="Login URL do app"

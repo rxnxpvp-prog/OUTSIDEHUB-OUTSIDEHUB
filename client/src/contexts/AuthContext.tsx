@@ -24,7 +24,6 @@ export interface User {
   bio?: string;
   links?: { title: string; url: string }[];
   isPublic?: boolean;
-  status?: string;
   skills?: string[];
   projects?: { title: string; description: string; url: string }[];
   tags?: string[];
@@ -42,7 +41,7 @@ export interface AuthContextType {
   login: (username: string, password: string, otp?: string) => Promise<{ success: boolean; requires2fa?: boolean; error?: string }>;
   register: (username: string, password: string, inviteCode: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
-  updateProfile: (updates: { name?: string; bio?: string; avatar?: string; customSubdomain?: string; links?: { title: string; url: string }[]; isPublic?: boolean; status?: string; skills?: string[]; projects?: { title: string; description: string; url: string }[]; tags?: string[] }) => Promise<void>;
+  updateProfile: (updates: { username?: string; name?: string; bio?: string; avatar?: string; customSubdomain?: string; links?: { title: string; url: string }[]; isPublic?: boolean; skills?: string[]; projects?: { title: string; description: string; url: string }[]; tags?: string[] }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -129,7 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   };
 
-  const updateProfile = async (updates: { name?: string; bio?: string; avatar?: string; customSubdomain?: string; links?: { title: string; url: string }[]; isPublic?: boolean; status?: string; skills?: string[]; projects?: { title: string; description: string; url: string }[]; tags?: string[] }) => {
+  const updateProfile = async (updates: { username?: string; name?: string; bio?: string; avatar?: string; customSubdomain?: string; links?: { title: string; url: string }[]; isPublic?: boolean; skills?: string[]; projects?: { title: string; description: string; url: string }[]; tags?: string[] }) => {
     const res = await api.put("/auth/profile", updates);
     setUser(res.data);
   };

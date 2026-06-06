@@ -245,7 +245,7 @@ function getDefaultDB(): DB {
     },
     desktopConfig: {
       version: "1.0.4",
-      downloadUrl: "https://github.com/rxnxpvp-prog/OUTSIDEHUB-V1/releases/download/v1/OutsideHub.exe",
+      downloadUrl: "https://github.com/rxnxpvp-prog/OUTSIDEHUB-OUTSIDEHUB/releases/download/v1/OutsideHub.exe",
       loginUrl: "https://www.outsidehub.com.br/login",
       notes: "OutsideHub desktop update",
     },
@@ -301,10 +301,14 @@ export function readDB(): DB {
     if (!db.desktopConfig) {
       db.desktopConfig = {
         version: "1.0.4",
-        downloadUrl: "https://github.com/rxnxpvp-prog/OUTSIDEHUB-V1/releases/download/v1/OutsideHub.exe",
+        downloadUrl: "https://github.com/rxnxpvp-prog/OUTSIDEHUB-OUTSIDEHUB/releases/download/v1/OutsideHub.exe",
         loginUrl: "https://www.outsidehub.com.br/login",
         notes: "OutsideHub desktop update",
       };
+      changed = true;
+    }
+    if (db.desktopConfig?.downloadUrl?.includes("OUTSIDEHUB-V1/releases/download/v1/OutsideHub.exe")) {
+      db.desktopConfig.downloadUrl = "https://github.com/rxnxpvp-prog/OUTSIDEHUB-OUTSIDEHUB/releases/download/v1/OutsideHub.exe";
       changed = true;
     }
     if (changed) writeDB(db);

@@ -129,7 +129,7 @@ function AppShell() {
       </Route>
 
       <Route path="/u/:identifier">
-        <AuthRoute><Layout><PublicProfile /></Layout></AuthRoute>
+        <PublicProfile />
       </Route>
 
       {/* Protected — wrapped in Layout */}

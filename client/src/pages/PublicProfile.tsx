@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useRoute, useLocation } from "wouter";
 import api from "@/lib/api";
-import { Lock, Terminal } from "lucide-react";
+import { ExternalLink, Instagram, Lock, MessageCircle, Send, Terminal } from "lucide-react";
 import { BadgeDisplay, nameColorFromBadges } from "@/components/BadgeIcon";
 import { isSupremeUsername } from "@/lib/identity";
 
@@ -15,7 +15,6 @@ interface PublicUser {
   accessCode?: string;
   avatar?: string;
   bio?: string;
-  status?: string;
   tags?: string[];
   links?: { title: string; url: string }[];
   badges?: { id: string; name: string; icon: string; image?: string; color?: string }[];
@@ -28,6 +27,21 @@ function permissionLabel(role?: string, badges?: { icon: string }[]): string {
   if (role === "moderator") return "MODERADOR";
   if (badges?.some((b) => b.icon === "sys:premium")) return "PREMIUM";
   return "USER";
+}
+
+function linkIcon(title: string) {
+  const key = title.toLowerCase();
+  if (key.includes("instagram")) return Instagram;
+  if (key.includes("telegram")) return Send;
+  if (key.includes("discord")) return MessageCircle;
+  return ExternalLink;
+}
+
+function safeHref(url: string) {
+  const trimmed = url.trim();
+  if (!trimmed) return "";
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
 }
 
 const card: React.CSSProperties = {
@@ -162,6 +176,9 @@ export default function PublicProfile({ identifierParam }: { identifierParam?: s
   const perm = isSupremeUsername(user.username) ? "CEO" : permissionLabel(user.role, user.badges);
   const allBadges = user.badges || [];
   const publicUrl = mainUrl ? `${mainUrl}/u/${user.username}` : `/u/${user.username}`;
+  const visibleLinks = (user.links || [])
+    .map((link) => ({ ...link, url: safeHref(link.url) }))
+    .filter((link) => link.title.trim() && link.url);
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "18px", background: "var(--background)" }}>
@@ -208,8 +225,22 @@ export default function PublicProfile({ identifierParam }: { identifierParam?: s
           </div>
         </div>
 
+        {visibleLinks.length > 0 && (
+          <div className="op-social-links">
+            {visibleLinks.map((link) => {
+              const Icon = linkIcon(link.title);
+              return (
+                <a key={`${link.title}-${link.url}`} href={link.url} target="_blank" rel="noreferrer" className="op-social-link">
+                  <Icon size={14} />
+                  <span>{link.title}</span>
+                </a>
+              );
+            })}
+          </div>
+        )}
+
         <button className="op-view-btn" onClick={() => { window.location.href = publicUrl; }}>
-          &gt; ver perfil publico
+          &gt; abrir outsidehub/{user.username}
         </button>
 
         <strong className="op-corner-code">{nid}</strong>

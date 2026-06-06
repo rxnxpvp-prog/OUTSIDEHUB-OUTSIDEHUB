@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import QRCode from "react-qr-code";
-import { Upload, Save, Eye, EyeOff, Plus, Trash2, ArrowLeft, ShieldCheck, ShieldOff } from "lucide-react";
+import { Upload, Save, Plus, Trash2, ArrowLeft, ShieldCheck, ShieldOff, Instagram, Send, MessageCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import api from "@/lib/api";
 import { toast } from "sonner";
@@ -21,6 +21,47 @@ function roleColor(role: string): string {
   if (role === "admin") return "rgba(139,26,26,0.38)";
   if (role === "moderator") return "rgba(88,42,140,0.38)";
   return "rgba(26,61,92,0.38)";
+}
+
+const SOCIAL_TITLES = ["instagram", "telegram", "discord"];
+
+function cleanUsername(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 24);
+}
+
+function cleanSubdomain(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 48);
+}
+
+function socialUrl(kind: "instagram" | "telegram" | "discord", value: string) {
+  const raw = value.trim();
+  if (!raw) return "";
+  if (/^https?:\/\//i.test(raw)) return raw;
+  const handle = raw.replace(/^@/, "").replace(/^#/, "");
+  if (kind === "instagram") return `https://instagram.com/${handle}`;
+  if (kind === "telegram") return `https://t.me/${handle}`;
+  return `https://discord.com/users/${handle}`;
+}
+
+function socialHandle(links: { title: string; url: string }[], kind: "instagram" | "telegram" | "discord") {
+  const link = links.find((item) => item.title.toLowerCase() === kind);
+  if (!link) return "";
+  return link.url
+    .replace(/^https?:\/\/(www\.)?instagram\.com\//i, "")
+    .replace(/^https?:\/\/t\.me\//i, "")
+    .replace(/^https?:\/\/discord\.com\/users\//i, "")
+    .replace(/\/$/g, "");
+}
+
+function mergeSocialLinks(
+  links: { title: string; url: string }[],
+  socials: Record<"instagram" | "telegram" | "discord", string>
+) {
+  const manual = links.filter((item) => !SOCIAL_TITLES.includes(item.title.toLowerCase()));
+  const socialLinks = (Object.keys(socials) as Array<"instagram" | "telegram" | "discord">)
+    .map((kind) => ({ title: kind, url: socialUrl(kind, socials[kind]) }))
+    .filter((item) => item.url);
+  return [...socialLinks, ...manual].filter((item) => item.title.trim() && item.url.trim());
 }
 
 /* ─── Shared styles ─────────────────────────────────── */
@@ -94,14 +135,19 @@ export default function Profile() {
   const [, navigate] = useLocation();
   const goBack = () => window.history.length > 1 ? window.history.back() : navigate("/");
 
+  const [username,        setUsername]        = useState(user?.username ?? "");
   const [name,            setName]            = useState(user?.name ?? "");
   const [bio,             setBio]             = useState(user?.bio ?? "");
   const [avatar,          setAvatar]          = useState(user?.avatar ?? "");
   const [customSubdomain, setCustomSubdomain] = useState(user?.customSubdomain ?? "");
   const [links,           setLinks]           = useState<{ title: string; url: string }[]>(user?.links ?? []);
   const [isPublic,        setIsPublic]        = useState(user?.isPublic !== false);
-  const [status,          setStatus]          = useState(user?.status ?? "");
   const [tags,            setTags]            = useState<string[]>(user?.tags ?? []);
+  const [socials,         setSocials]         = useState({
+    instagram: socialHandle(user?.links ?? [], "instagram"),
+    telegram: socialHandle(user?.links ?? [], "telegram"),
+    discord: socialHandle(user?.links ?? [], "discord"),
+  });
   const [saving,          setSaving]          = useState(false);
 
   const [tfaEnabled, setTfaEnabled] = useState(false);
@@ -134,7 +180,18 @@ export default function Profile() {
   const save = async () => {
     setSaving(true);
     try {
-      await updateProfile({ name, bio, avatar, customSubdomain: customSubdomain.trim(), links, isPublic, status, tags });
+      const finalLinks = mergeSocialLinks(links, socials);
+      await updateProfile({
+        username: cleanUsername(username),
+        name,
+        bio,
+        avatar,
+        customSubdomain: customSubdomain.trim(),
+        links: finalLinks,
+        isPublic,
+        tags,
+      });
+      setLinks(finalLinks);
       toast.success("Profile updated");
     } catch (err: any) { toast.error(err.response?.data?.error || "Failed to save"); }
     finally { setSaving(false); }
@@ -199,7 +256,7 @@ export default function Profile() {
           <p style={{ fontSize: 10, color: "rgba(255,255,255,0.28)", margin: "2px 0 0", fontFamily: MONO }}>user identity</p>
         </div>
         <button
-          onClick={() => navigate(`/u/${user.username}`)}
+          onClick={() => navigate(`/u/${cleanUsername(username) || user.username}`)}
           style={{ ...btn, marginLeft: "auto", fontSize: 10 }}
           onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.09)"; e.currentTarget.style.color = "#f0f0f0"; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = "rgba(255,255,255,0.55)"; }}
@@ -226,7 +283,7 @@ export default function Profile() {
             }}>
               {src
                 ? <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                : user.username.charAt(0).toUpperCase()
+                : (cleanUsername(username) || user.username).charAt(0).toUpperCase()
               }
             </div>
             <label style={{
@@ -262,7 +319,7 @@ export default function Profile() {
               <div>
                 <p style={lbl}>USER</p>
                 <p style={{ fontSize: 11, fontWeight: 800, color: isSupremeUsername(user.username) ? "#ef4444" : "rgba(232,232,236,0.82)", letterSpacing: "0.05em", margin: 0 }}>
-                  {name || user.username}
+                  {cleanUsername(username) || user.username}
                 </p>
               </div>
               <div>
@@ -302,10 +359,6 @@ export default function Profile() {
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="your name" style={inp} />
           </div>
 
-          <div><p style={lbl}>status / current mission</p>
-            <input value={status} onChange={(e) => setStatus(e.target.value)} placeholder="Ex: Building the future..." style={inp} />
-          </div>
-
           <div><p style={lbl}>bio</p>
             <textarea value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Summary of your journey..." rows={3} style={{ ...inp, resize: "none" }} />
           </div>
@@ -313,7 +366,7 @@ export default function Profile() {
           <div style={{ display: "flex", gap: 10 }}>
             <div style={{ flex: 1 }}>
               <p style={lbl}>username</p>
-              <input value={user.username} disabled style={{ ...inp, opacity: 0.38, cursor: "not-allowed" }} />
+              <input value={username} onChange={(e) => setUsername(cleanUsername(e.target.value))} placeholder="seu-user" style={inp} />
             </div>
             <div style={{ flex: 1 }}>
               <p style={lbl}>email</p>
@@ -323,10 +376,36 @@ export default function Profile() {
 
           <div><p style={lbl}>subdomain (optional)</p>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <input value={customSubdomain} onChange={(e) => setCustomSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} placeholder="seu-nome" style={{ ...inp, flex: 1 }} />
+              <input value={customSubdomain} onChange={(e) => setCustomSubdomain(cleanSubdomain(e.target.value))} placeholder={cleanUsername(username) || "seu-nome"} style={{ ...inp, flex: 1 }} />
               <span style={{ fontSize: 11, color: "rgba(255,255,255,0.28)", fontFamily: MONO, whiteSpace: "nowrap" }}>.outsidehub.com</span>
             </div>
           </div>
+        </div>
+        <ProgressBar />
+      </div>
+
+      {/* SOCIALS */}
+      <div style={card}>
+        <WindowBar badge="SOCIAL-LINKS" />
+        <div style={{ padding: "18px 20px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+          <SectionLabel>instagram / telegram / discord</SectionLabel>
+          {([
+            ["instagram", Instagram, "@seuuser"],
+            ["telegram", Send, "@seucanal"],
+            ["discord", MessageCircle, "id ou link do discord"],
+          ] as const).map(([kind, Icon, placeholder]) => (
+            <label key={kind} style={{ display: "grid", gridTemplateColumns: "30px 1fr", gap: 10, alignItems: "center" }}>
+              <span style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid rgba(255,255,255,0.09)", background: "rgba(255,255,255,0.045)", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.62)" }}>
+                <Icon size={14} />
+              </span>
+              <input
+                value={socials[kind]}
+                onChange={(e) => setSocials((current) => ({ ...current, [kind]: e.target.value }))}
+                placeholder={placeholder}
+                style={inp}
+              />
+            </label>
+          ))}
         </div>
         <ProgressBar />
       </div>
