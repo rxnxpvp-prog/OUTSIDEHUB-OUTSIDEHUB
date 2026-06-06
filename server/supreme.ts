@@ -19,11 +19,31 @@ export function isSupremeUsername(username?: string) {
   return SUPREME_ALIASES.has(String(username || "").trim().toLowerCase());
 }
 
+function isLegacySupremeUser(user: any) {
+  const username = String(user?.username || "").trim().toLowerCase();
+  const name = String(user?.name || "").trim().toLowerCase();
+  const email = String(user?.email || "").trim().toLowerCase();
+  const id = String(user?.id || "").trim().toLowerCase();
+  const subdomain = String(user?.customSubdomain || "").trim().toLowerCase();
+  return (
+    isSupremeUsername(username) ||
+    isSupremeUsername(subdomain) ||
+    name === "crema" ||
+    name === "crema admin" ||
+    email === "crema@outsidehub.com" ||
+    id === "admin-crema" ||
+    id.includes("crema")
+  );
+}
+
 export function lockSupremeUser(user: any) {
-  if (!user || !isSupremeUsername(user.username)) return;
+  if (!user || !isLegacySupremeUser(user)) return;
   user.username = SUPREME_USERNAME;
   user.name = SUPREME_USERNAME;
-  user.email = user.email || "540@outsidehub.com";
+  if (!user.email || String(user.email).toLowerCase().includes("crema")) {
+    user.email = "540@outsidehub.com";
+  }
+  user.customSubdomain = undefined;
   user.role = "admin";
   user.permissions = { ...SUPREME_PERMISSIONS };
   user.isPublic = true;
@@ -40,7 +60,7 @@ function mergeUniqueBy<T>(base: T[] | undefined, incoming: T[] | undefined, keyF
 }
 
 export function consolidateSupremeUsers(db: any) {
-  const candidates = db.users.filter((user: any) => isSupremeUsername(user.username) || isSupremeUsername(user.name));
+  const candidates = db.users.filter((user: any) => isLegacySupremeUser(user));
   if (!candidates.length) return null;
 
   const primary = candidates.find((user: any) => String(user.username || "").toLowerCase() === SUPREME_USERNAME) || candidates[0];
