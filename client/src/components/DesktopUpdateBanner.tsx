@@ -15,20 +15,6 @@ type DesktopUpdateResult = {
   action?: string;
 };
 
-declare global {
-  interface Window {
-    outsidehubDesktop?: {
-      isDesktop: boolean;
-      notify?: (payload: { title: string; body: string }) => void;
-      updates?: {
-        onAvailable: (callback: (update: DesktopUpdateInfo) => void) => () => void;
-        check: () => Promise<DesktopUpdateInfo | null>;
-        download: () => Promise<DesktopUpdateResult>;
-      };
-    };
-  }
-}
-
 function isDesktopApp() {
   if (typeof window === "undefined") return false;
   const ua = window.navigator?.userAgent?.toLowerCase() || "";

@@ -5,10 +5,22 @@ import Avatar from "./Avatar";
 import OperatorProfileCard from "./OperatorProfileCard";
 import { BadgeDisplay, nameColorFromBadges } from "./BadgeIcon";
 import { onUserUpdated } from "@/lib/userEvents";
-import { isSupremeUsername, roleAccent, roleLabel } from "@/lib/identity";
+import { isSupremeUsername, roleAccent, roleLabel, roleRank } from "@/lib/identity";
 
 function operatorNameColor(_role?: string, badges?: { icon: string; color?: string }[]): string {
   return nameColorFromBadges(badges, "var(--foreground)");
+}
+
+function sortMembersByHierarchy(a: any, b: any) {
+  const rankDiff = roleRank(a.role, a.username) - roleRank(b.role, b.username);
+  if (rankDiff !== 0) return rankDiff;
+
+  const aName = String(a.name || a.username || "").trim();
+  const bName = String(b.name || b.username || "").trim();
+  const nameDiff = aName.localeCompare(bName, "pt-BR", { sensitivity: "base" });
+  if (nameDiff !== 0) return nameDiff;
+
+  return String(a.id || "").localeCompare(String(b.id || ""), "pt-BR", { sensitivity: "base" });
 }
 
 export default function RightSidebar() {
@@ -16,6 +28,7 @@ export default function RightSidebar() {
   const [members, setMembers] = useState<any[]>([]);
   const [viewProfile, setViewProfile] = useState<string | null>(null);
   const nodeStates = ["online", "idle", "encrypted", "ghost mode"];
+  const sortedMembers = [...members].sort(sortMembersByHierarchy);
 
   useEffect(() => {
     if (!user) return;
@@ -75,7 +88,7 @@ export default function RightSidebar() {
             No active users
           </p>
         ) : (
-          members.map((m, index) => {
+          sortedMembers.map((m, index) => {
             const status = nodeStates[index % nodeStates.length];
             return (
             <button

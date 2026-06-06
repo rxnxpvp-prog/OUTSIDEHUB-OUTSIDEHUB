@@ -79,6 +79,38 @@ const inpBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HT
   e.currentTarget.style.borderColor = "var(--border)";
 };
 
+async function imageFileToBadgeDataUrl(file: File): Promise<string> {
+  if (!file.type.startsWith("image/")) {
+    throw new Error("Use um arquivo de imagem.");
+  }
+
+  const sourceUrl = URL.createObjectURL(file);
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("Nao consegui ler essa imagem."));
+      img.src = sourceUrl;
+    });
+
+    const maxSize = 256;
+    const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
+    const width = Math.max(1, Math.round(image.width * scale));
+    const height = Math.max(1, Math.round(image.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas indisponivel no navegador.");
+
+    ctx.clearRect(0, 0, width, height);
+    ctx.drawImage(image, 0, 0, width, height);
+    return canvas.toDataURL("image/webp", 0.82);
+  } finally {
+    URL.revokeObjectURL(sourceUrl);
+  }
+}
+
 // ── Section wrapper ───────────────────────────────────────
 function Section({ title, icon: Icon, children }: { title: string; icon: React.ElementType; children: React.ReactNode }) {
   return (
@@ -1152,15 +1184,21 @@ export default function AdminPanel() {
                 </div>
                 <label className="action action-outline" style={{ fontSize: 10, padding: "4px 8px", cursor: "pointer" }}>
                   {image ? "Trocar imagem" : "Imagem"}
-                  <input type="file" accept="image/*" style={{ display: "none" }}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      const reader = new FileReader();
-                      reader.onload = () => updateBadgeImage(type, reader.result as string);
-                      reader.readAsDataURL(file);
-                    }}
-                  />
+                    <input type="file" accept="image/*" style={{ display: "none" }}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        try {
+                          const image = await imageFileToBadgeDataUrl(file);
+                          updateBadgeImage(type, image);
+                          toast.success("Imagem da badge otimizada");
+                        } catch (err: any) {
+                          toast.error(err?.message || "Erro ao carregar imagem");
+                        } finally {
+                          e.currentTarget.value = "";
+                        }
+                      }}
+                    />
                 </label>
                 {image && (
                   <button onClick={() => updateBadgeImage(type, "")} className="action action-outline" style={{ fontSize: 10, padding: "4px 8px" }}>

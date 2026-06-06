@@ -5,15 +5,6 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { subscribeRealtime, type RealtimeEvent } from "@/lib/realtime";
 
-declare global {
-  interface Window {
-    outsidehubDesktop?: {
-      isDesktop: boolean;
-      notify?: (payload: { title: string; body: string }) => void;
-    };
-  }
-}
-
 type Notice = {
   key: string;
   title: string;
