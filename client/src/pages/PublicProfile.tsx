@@ -224,7 +224,7 @@ export default function PublicProfile({ identifierParam }: { identifierParam?: s
             {allBadges.length > 0 && (
               <div className="op-access-mask">
                 {allBadges.map((b) => (
-                  <span key={b.id} title={b.name}>
+                  <span key={b.id} data-label={b.name}>
                     <BadgeDisplay badge={b as any} size={20} />
                   </span>
                 ))}
