@@ -210,16 +210,6 @@ export default function PublicProfile({ identifierParam }: { identifierParam?: s
               <span>$</span> outsidehub --peek
             </div>
 
-            {allBadges.length > 0 && (
-              <div className="op-access-mask">
-                {allBadges.map((b) => (
-                  <span key={b.id} title={b.name}>
-                    <BadgeDisplay badge={b as any} size={20} />
-                  </span>
-                ))}
-              </div>
-            )}
-
             <div className="op-vault-row">
               <span>
                 USER
@@ -230,6 +220,16 @@ export default function PublicProfile({ identifierParam }: { identifierParam?: s
                 <b style={{ color: isSupremeUsername(user.username) ? "#ef4444" : "inherit" }}>{perm}</b>
               </span>
             </div>
+
+            {allBadges.length > 0 && (
+              <div className="op-access-mask">
+                {allBadges.map((b) => (
+                  <span key={b.id} title={b.name}>
+                    <BadgeDisplay badge={b as any} size={20} />
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
