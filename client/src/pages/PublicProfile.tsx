@@ -37,6 +37,11 @@ function linkIcon(title: string) {
   return ExternalLink;
 }
 
+function isSocialLink(title: string) {
+  const key = title.toLowerCase();
+  return key.includes("instagram") || key.includes("telegram") || key.includes("discord");
+}
+
 function safeHref(url: string) {
   const trimmed = url.trim();
   if (!trimmed) return "";
@@ -92,8 +97,9 @@ function ProgressBar() {
 
 export default function PublicProfile({ identifierParam }: { identifierParam?: string }) {
   const [, params] = useRoute("/u/:identifier");
+  const [, usersParams] = useRoute("/usuarios/:identifier");
   const [, rootParams] = useRoute("/:identifier");
-  const identifier = identifierParam || params?.identifier || rootParams?.identifier;
+  const identifier = identifierParam || params?.identifier || usersParams?.identifier || rootParams?.identifier;
   const [, navigate] = useLocation();
 
   const [user, setUser] = useState<PublicUser | null>(null);
@@ -115,7 +121,7 @@ export default function PublicProfile({ identifierParam }: { identifierParam?: s
 
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--background)" }}>
+      <div className="public-profile-page" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <style>{PP_STYLES}</style>
         <div className="pp-card" style={{ ...card, width: "100%", maxWidth: 420 }}>
           <WindowBar badge="OH-ACCESS" />
@@ -135,7 +141,7 @@ export default function PublicProfile({ identifierParam }: { identifierParam?: s
 
   if (error || !user) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--background)", flexDirection: "column", gap: 14 }}>
+      <div className="public-profile-page" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 14 }}>
         <style>{PP_STYLES}</style>
         <Terminal size={40} style={{ color: "rgba(255,60,60,0.6)" }} />
         <h1 style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.14em", fontFamily: MONO, color: "rgba(255,255,255,0.7)" }}>SISTEMA OFFLINE</h1>
@@ -146,7 +152,7 @@ export default function PublicProfile({ identifierParam }: { identifierParam?: s
 
   if (user.isPublic === false) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 16px", background: "var(--background)" }}>
+      <div className="public-profile-page" style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 16px" }}>
         <style>{PP_STYLES}</style>
         <div className="pp-card" style={{ ...card, width: "100%", maxWidth: 360 }}>
           <WindowBar badge="OH-ACCESS // RESTRICTED" onClose={handleClose} />
@@ -176,14 +182,15 @@ export default function PublicProfile({ identifierParam }: { identifierParam?: s
   const nid = user.accessCode || "OH-000";
   const perm = isSupremeUsername(user.username) ? "CEO" : permissionLabel(user.role, user.badges);
   const allBadges = user.badges || [];
-  const publicUrl = mainUrl ? `${mainUrl}/u/${user.username}` : `/u/${user.username}`;
+  const publicUrl = mainUrl ? `${mainUrl}/${user.username}` : `/${user.username}`;
   const visibleLinks = (user.links || [])
     .map((link) => ({ ...link, url: safeHref(link.url) }))
-    .filter((link) => link.title.trim() && link.url);
+    .filter((link) => link.title.trim() && link.url && isSocialLink(link.title));
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "18px", background: "var(--background)" }}>
+    <div className="public-profile-page" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "18px" }}>
       <style>{PP_STYLES}</style>
+      <div className="profile-shadow-runner" aria-hidden="true" />
       <section className="op-card" aria-label="Public user profile">
         <div className="op-header">
           <div className="op-dots">
@@ -231,9 +238,16 @@ export default function PublicProfile({ identifierParam }: { identifierParam?: s
             {visibleLinks.map((link) => {
               const Icon = linkIcon(link.title);
               return (
-                <a key={`${link.title}-${link.url}`} href={link.url} target="_blank" rel="noreferrer" className="op-social-link">
-                  <Icon size={14} />
-                  <span>{link.title}</span>
+                <a
+                  key={`${link.title}-${link.url}`}
+                  href={link.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="op-social-link"
+                  aria-label={link.title}
+                  title={link.title}
+                >
+                  <Icon size={15} />
                 </a>
               );
             })}
@@ -241,7 +255,7 @@ export default function PublicProfile({ identifierParam }: { identifierParam?: s
         )}
 
         <button className="op-view-btn" onClick={() => { window.location.href = publicUrl; }}>
-          &gt; abrir outsidehub/{user.username}
+          &gt; outsidehub/{user.username}
         </button>
 
         <strong className="op-corner-code">{nid}</strong>

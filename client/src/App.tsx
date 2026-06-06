@@ -132,6 +132,10 @@ function AppShell() {
         <PublicProfile />
       </Route>
 
+      <Route path="/usuarios/:identifier">
+        <PublicProfile />
+      </Route>
+
       {/* Protected — wrapped in Layout */}
       <Route path="/">
         <AuthRoute feature="feed">

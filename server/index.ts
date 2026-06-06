@@ -135,11 +135,19 @@ async function start() {
   // ── Static (production) ──
   if (process.env.NODE_ENV === "production") {
     const staticPath = path.resolve(process.env.STATIC_PATH || path.join(__dirname, "public"));
-    app.use(express.static(staticPath));
+    app.use(express.static(staticPath, {
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith(".html")) {
+          res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+        }
+      },
+    }));
     app.get("/download", (_req, res) => {
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
       res.sendFile(path.join(staticPath, "download.html"));
     });
     app.get("*", (_req, res) => {
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
       res.sendFile(path.join(staticPath, "index.html"));
     });
   }
