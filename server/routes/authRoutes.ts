@@ -123,11 +123,12 @@ router.post("/login", async (req, res) => {
     }
 
     const db = getDB();
+    const loginId = String(username).trim().toLowerCase();
     const user = db.users.find(
       (u) =>
-        u.username?.toLowerCase() === String(username).toLowerCase() ||
-        u.email?.toLowerCase() === String(username).toLowerCase()
-    );
+        u.username?.toLowerCase() === loginId ||
+        u.email?.toLowerCase() === loginId
+    ) || db.users.find((u) => u.name?.trim().toLowerCase() === loginId);
 
     if (!user) {
       res.status(401).json({ error: "Usuário ou senha inválidos" });
