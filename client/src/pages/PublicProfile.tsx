@@ -65,12 +65,53 @@ const card: React.CSSProperties = {
   position: "relative",
 };
 
+const publicPageStyle: React.CSSProperties = {
+  minHeight: "100vh",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "18px",
+  position: "relative",
+  isolation: "isolate",
+  overflow: "hidden",
+  background: `
+    radial-gradient(ellipse at 50% 34%, rgba(70, 88, 60, 0.36), transparent 30%),
+    linear-gradient(86deg, transparent 0 5%, rgba(0,0,0,0.86) 5.4% 6.8%, transparent 7.2% 17%, rgba(0,0,0,0.78) 17.6% 19%, transparent 19.5% 34%, rgba(0,0,0,0.9) 34.6% 36.2%, transparent 36.8% 57%, rgba(0,0,0,0.76) 57.8% 59.1%, transparent 59.6% 78%, rgba(0,0,0,0.88) 78.7% 80.2%, transparent 80.8%),
+    radial-gradient(ellipse at 24% 78%, rgba(22, 46, 28, 0.58), transparent 34%),
+    radial-gradient(ellipse at 78% 70%, rgba(16, 38, 25, 0.52), transparent 38%),
+    linear-gradient(180deg, #0b100c 0%, #030504 58%, #000 100%)
+  `,
+};
+
 const PP_STYLES = `
 @keyframes ppIn {
   from { opacity: 0; transform: scale(0.94) translateY(12px); filter: blur(8px); }
   to   { opacity: 1; transform: scale(1)    translateY(0);    filter: blur(0);   }
 }
 .pp-card { animation: ppIn 0.48s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.public-profile-page {
+  background-color: #020302;
+}
+.public-profile-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(210, 235, 190, 0.12), transparent 28%),
+    linear-gradient(180deg, transparent 0 46%, rgba(0, 0, 0, 0.48) 70%, rgba(0, 0, 0, 0.88) 100%),
+    repeating-linear-gradient(180deg, rgba(255,255,255,0.018) 0, rgba(255,255,255,0.018) 1px, transparent 1px, transparent 7px);
+  opacity: 0.5;
+}
+.op-info {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+}
+.op-command { order: 1 !important; }
+.op-vault-row { order: 2 !important; }
+.op-access-mask { order: 3 !important; }
 `;
 
 function WindowBar({ badge, onClose }: { badge: string; onClose?: () => void }) {
@@ -188,7 +229,7 @@ export default function PublicProfile({ identifierParam }: { identifierParam?: s
     .filter((link) => link.title.trim() && link.url && isSocialLink(link.title));
 
   return (
-    <div className="public-profile-page" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "18px" }}>
+    <div className="public-profile-page" style={publicPageStyle}>
       <style>{PP_STYLES}</style>
       <div className="profile-shadow-runner" aria-hidden="true" />
       <section className="op-card" aria-label="Public user profile">
@@ -205,12 +246,12 @@ export default function PublicProfile({ identifierParam }: { identifierParam?: s
             {user.avatar ? <img src={user.avatar} alt={user.name} /> : user.username.charAt(0).toUpperCase()}
           </div>
 
-          <div className="op-info">
+          <div className="op-info" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 12 }}>
             <div className="op-command">
               <span>$</span> outsidehub --peek
             </div>
 
-            <div className="op-vault-row">
+            <div className="op-vault-row" style={{ order: 2 }}>
               <span>
                 USER
                 <b style={{ color: isSupremeUsername(user.username) ? "#ef4444" : nameColorFromBadges(user.badges) }}>{user.username || user.name}</b>
@@ -222,7 +263,7 @@ export default function PublicProfile({ identifierParam }: { identifierParam?: s
             </div>
 
             {allBadges.length > 0 && (
-              <div className="op-access-mask">
+              <div className="op-access-mask" style={{ order: 3 }}>
                 {allBadges.map((b) => (
                   <span key={b.id} data-label={b.name}>
                     <BadgeDisplay badge={b as any} size={20} />
