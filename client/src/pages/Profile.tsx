@@ -181,7 +181,7 @@ export default function Profile() {
     setSaving(true);
     try {
       const finalLinks = mergeSocialLinks(links, socials);
-      await updateProfile({
+      const savedUser = await updateProfile({
         username: cleanUsername(username),
         name,
         bio,
@@ -191,6 +191,13 @@ export default function Profile() {
         isPublic,
         tags,
       });
+      setUsername(savedUser.username ?? "");
+      setName(savedUser.name ?? "");
+      setBio(savedUser.bio ?? "");
+      setAvatar(savedUser.avatar ?? "");
+      setCustomSubdomain(savedUser.customSubdomain ?? "");
+      setIsPublic(savedUser.isPublic !== false);
+      setTags(savedUser.tags ?? []);
       setLinks(finalLinks);
       toast.success("Profile updated");
     } catch (err: any) { toast.error(err.response?.data?.error || "Failed to save"); }

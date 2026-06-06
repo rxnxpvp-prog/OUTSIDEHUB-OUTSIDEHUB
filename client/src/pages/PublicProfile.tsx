@@ -75,12 +75,14 @@ const publicPageStyle: React.CSSProperties = {
   isolation: "isolate",
   overflow: "hidden",
   background: `
-    radial-gradient(ellipse at 50% 34%, rgba(70, 88, 60, 0.36), transparent 30%),
-    linear-gradient(86deg, transparent 0 5%, rgba(0,0,0,0.86) 5.4% 6.8%, transparent 7.2% 17%, rgba(0,0,0,0.78) 17.6% 19%, transparent 19.5% 34%, rgba(0,0,0,0.9) 34.6% 36.2%, transparent 36.8% 57%, rgba(0,0,0,0.76) 57.8% 59.1%, transparent 59.6% 78%, rgba(0,0,0,0.88) 78.7% 80.2%, transparent 80.8%),
-    radial-gradient(ellipse at 24% 78%, rgba(22, 46, 28, 0.58), transparent 34%),
-    radial-gradient(ellipse at 78% 70%, rgba(16, 38, 25, 0.52), transparent 38%),
-    linear-gradient(180deg, #0b100c 0%, #030504 58%, #000 100%)
+    linear-gradient(180deg, rgba(0,0,0,0.48), rgba(0,0,0,0.82)),
+    radial-gradient(ellipse at 50% 44%, rgba(168, 210, 156, 0.08), transparent 30%),
+    url("/public-profile-forest-glitch.png"),
+    linear-gradient(180deg, #050705 0%, #000 100%)
   `,
+  backgroundPosition: "center center",
+  backgroundSize: "cover",
+  backgroundRepeat: "no-repeat",
 };
 
 const PP_STYLES = `
@@ -223,6 +225,7 @@ export default function PublicProfile({ identifierParam }: { identifierParam?: s
   const nid = user.accessCode || "OH-000";
   const perm = isSupremeUsername(user.username) ? "CEO" : permissionLabel(user.role, user.badges);
   const allBadges = user.badges || [];
+  const visibleUser = (user.name || "").trim() || user.username;
   const publicUrl = mainUrl ? `${mainUrl}/${user.username}` : `/${user.username}`;
   const visibleLinks = (user.links || [])
     .map((link) => ({ ...link, url: safeHref(link.url) }))
@@ -254,7 +257,7 @@ export default function PublicProfile({ identifierParam }: { identifierParam?: s
             <div className="op-vault-row" style={{ order: 2 }}>
               <span>
                 USER
-                <b style={{ color: isSupremeUsername(user.username) ? "#ef4444" : nameColorFromBadges(user.badges) }}>{user.username || user.name}</b>
+                <b style={{ color: isSupremeUsername(user.username) ? "#ef4444" : nameColorFromBadges(user.badges) }}>{visibleUser}</b>
               </span>
               <span>
                 TYPE
