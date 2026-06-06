@@ -34,8 +34,8 @@ function getDiscordConfig() {
     redirectUri:
       cfg?.redirectUri ||
       process.env.DISCORD_REDIRECT_URI ||
-      "https://www.outsidehub.com.br/api/auth/discord/callback",
-    clientUrl: cfg?.clientUrl || process.env.CLIENT_URL || "https://www.outsidehub.com.br",
+      "https://outsidenetworking.com/api/auth/discord/callback",
+    clientUrl: cfg?.clientUrl || process.env.CLIENT_URL || "https://outsidenetworking.com",
     rpcDetails: cfg?.rpcDetails || "OutsideHub",
     rpcState: cfg?.rpcState || "Online",
   };

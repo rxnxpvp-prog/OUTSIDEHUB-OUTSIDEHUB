@@ -38,13 +38,13 @@ router.get("/desktop/public", (_req, res) => {
   const cfg = db.desktopConfig || {
     version: "1.0.4",
     downloadUrl: "https://github.com/rxnxpvp-prog/OUTSIDEHUB-OUTSIDEHUB/releases/download/v1/OutsideHub.exe",
-    loginUrl: "https://www.outsidehub.com.br/login",
+    loginUrl: "https://outsidenetworking.com/login",
     notes: "OutsideHub desktop update",
   };
   res.json({
     version: cfg.version || "1.0.4",
     downloadUrl: cfg.downloadUrl || "",
-    loginUrl: cfg.loginUrl || "https://www.outsidehub.com.br/login",
+    loginUrl: cfg.loginUrl || "https://outsidenetworking.com/login",
     notes: cfg.notes || "",
   });
 });
@@ -63,8 +63,8 @@ router.get("/settings", requireAdmin, (req, res) => {
     discordConfig: {
       clientId: db.discordConfig?.clientId || "",
       clientSecretSet: Boolean(db.discordConfig?.clientSecret),
-      redirectUri: db.discordConfig?.redirectUri || "https://www.outsidehub.com.br/api/auth/discord/callback",
-      clientUrl: db.discordConfig?.clientUrl || "https://www.outsidehub.com.br",
+      redirectUri: db.discordConfig?.redirectUri || "https://outsidenetworking.com/api/auth/discord/callback",
+      clientUrl: db.discordConfig?.clientUrl || "https://outsidenetworking.com",
       rpcDetails: db.discordConfig?.rpcDetails || "OutsideHub",
       rpcState: db.discordConfig?.rpcState || "Online",
     },
@@ -78,7 +78,7 @@ router.get("/settings", requireAdmin, (req, res) => {
     desktopConfig: {
       version: db.desktopConfig?.version || "1.0.4",
       downloadUrl: db.desktopConfig?.downloadUrl || "https://github.com/rxnxpvp-prog/OUTSIDEHUB-OUTSIDEHUB/releases/download/v1/OutsideHub.exe",
-      loginUrl: db.desktopConfig?.loginUrl || "https://www.outsidehub.com.br/login",
+      loginUrl: db.desktopConfig?.loginUrl || "https://outsidenetworking.com/login",
       notes: db.desktopConfig?.notes || "",
     },
   });
@@ -314,13 +314,13 @@ router.put("/desktop", requireSupreme, (req, res) => {
   db.desktopConfig = db.desktopConfig || {
     version: "1.0.4",
     downloadUrl: "https://github.com/rxnxpvp-prog/OUTSIDEHUB-OUTSIDEHUB/releases/download/v1/OutsideHub.exe",
-    loginUrl: "https://www.outsidehub.com.br/login",
+    loginUrl: "https://outsidenetworking.com/login",
     notes: "OutsideHub desktop update",
   };
 
   if (version !== undefined) db.desktopConfig.version = String(version).trim() || "1.0.4";
   if (downloadUrl !== undefined) db.desktopConfig.downloadUrl = String(downloadUrl).trim();
-  if (loginUrl !== undefined) db.desktopConfig.loginUrl = String(loginUrl).trim() || "https://www.outsidehub.com.br/login";
+  if (loginUrl !== undefined) db.desktopConfig.loginUrl = String(loginUrl).trim() || "https://outsidenetworking.com/login";
   if (notes !== undefined) db.desktopConfig.notes = String(notes).trim();
 
   saveDB(db);

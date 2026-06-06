@@ -246,7 +246,7 @@ function getDefaultDB(): DB {
     desktopConfig: {
       version: "1.0.4",
       downloadUrl: "https://github.com/rxnxpvp-prog/OUTSIDEHUB-OUTSIDEHUB/releases/download/v1/OutsideHub.exe",
-      loginUrl: "https://www.outsidehub.com.br/login",
+      loginUrl: "https://outsidenetworking.com/login",
       notes: "OutsideHub desktop update",
     },
     hostingerAliases: [],
@@ -302,7 +302,7 @@ export function readDB(): DB {
       db.desktopConfig = {
         version: "1.0.4",
         downloadUrl: "https://github.com/rxnxpvp-prog/OUTSIDEHUB-OUTSIDEHUB/releases/download/v1/OutsideHub.exe",
-        loginUrl: "https://www.outsidehub.com.br/login",
+        loginUrl: "https://outsidenetworking.com/login",
         notes: "OutsideHub desktop update",
       };
       changed = true;
