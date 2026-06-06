@@ -33,7 +33,7 @@ echo [2/2] Iniciando web e API...
 echo.
 echo Web: http://localhost:5173
 echo API: http://localhost:3333/api
-echo Login inicial: crema / crema
+echo Login inicial: 540 / 3526
 echo.
 
 call pnpm run dev

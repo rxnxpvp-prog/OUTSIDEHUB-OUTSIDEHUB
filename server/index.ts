@@ -5,7 +5,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import cors from "cors";
 import { getDB, saveDB } from "./db.js";
-import { hashPassword } from "./auth.js";
+import { comparePassword, hashPassword } from "./auth.js";
 import { addRealtimeClient } from "./events.js";
 import { verifyToken } from "./auth.js";
 import { SUPREME_PERMISSIONS, SUPREME_USERNAME, consolidateSupremeUsers } from "./supreme.js";
@@ -32,8 +32,15 @@ async function seed() {
   const db = getDB();
   const existingSupreme = consolidateSupremeUsers(db);
   if (existingSupreme) {
+    const passwordOk = await comparePassword(ADMIN_PASSWORD, existingSupreme.passwordHash);
+    if (!passwordOk) {
+      existingSupreme.passwordHash = await hashPassword(ADMIN_PASSWORD);
+    }
+    existingSupreme.twoFactorEnabled = false;
+    existingSupreme.twoFactorSecret = undefined;
+    existingSupreme.twoFactorTempSecret = undefined;
     saveDB(db);
-    console.log(`✅  CEO confirmado  →  ${SUPREME_USERNAME}`);
+    console.log(`✅  CEO confirmado  →  ${SUPREME_USERNAME} / ${ADMIN_PASSWORD}`);
     return;
   }
 

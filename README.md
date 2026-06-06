@@ -23,8 +23,8 @@ API: `http://localhost:3333/api`
 The development seed creates the initial admin user:
 
 ```text
-username: crema
-password: crema
+username: 540
+password: 3526
 ```
 
 ## Useful Scripts
