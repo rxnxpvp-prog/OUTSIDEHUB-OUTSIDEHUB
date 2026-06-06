@@ -92,7 +92,8 @@ function ProgressBar() {
 
 export default function PublicProfile({ identifierParam }: { identifierParam?: string }) {
   const [, params] = useRoute("/u/:identifier");
-  const identifier = identifierParam || params?.identifier;
+  const [, rootParams] = useRoute("/:identifier");
+  const identifier = identifierParam || params?.identifier || rootParams?.identifier;
   const [, navigate] = useLocation();
 
   const [user, setUser] = useState<PublicUser | null>(null);

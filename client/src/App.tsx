@@ -211,6 +211,10 @@ function AppShell() {
         <AdminRoute><Layout><AdminPanel /></Layout></AdminRoute>
       </Route>
 
+      <Route path="/:identifier">
+        <PublicProfile />
+      </Route>
+
       {/* 404 */}
       <Route>
         {isAuthenticated ? <NotFound /> : <Redirect to="/login" />}
