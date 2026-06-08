@@ -26,6 +26,9 @@ process.env.PORT = PORT;
 process.env.STATIC_PATH = STATIC_PATH;
 process.env.DATA_DIR = path.join(app.getPath("userData"), "data");
 
+app.setName("OutsideHub");
+app.setAppUserModelId("com.outsidehub.desktop");
+
 Menu.setApplicationMenu(null);
 
 ipcMain.on("outsidehub:notify", (_event, payload) => {

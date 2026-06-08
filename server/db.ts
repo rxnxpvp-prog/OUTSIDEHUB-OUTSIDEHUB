@@ -244,8 +244,8 @@ function getDefaultDB(): DB {
       imapPort: "993",
     },
     desktopConfig: {
-      version: "1.0.4",
-      downloadUrl: "https://github.com/rxnxpvp-prog/OUTSIDEHUB-OUTSIDEHUB/releases/download/v1/OutsideHub.exe",
+      version: "1.0.5",
+      downloadUrl: "https://github.com/rxnxpvp-prog/OUTSIDEHUB-V1/releases/download/v1.0.5/OutsideHub-Setup-1.0.5.exe",
       loginUrl: "https://outsidenetworking.com/login",
       notes: "OutsideHub desktop update",
     },
@@ -300,15 +300,16 @@ export function readDB(): DB {
     }
     if (!db.desktopConfig) {
       db.desktopConfig = {
-        version: "1.0.4",
-        downloadUrl: "https://github.com/rxnxpvp-prog/OUTSIDEHUB-OUTSIDEHUB/releases/download/v1/OutsideHub.exe",
+        version: "1.0.5",
+        downloadUrl: "https://github.com/rxnxpvp-prog/OUTSIDEHUB-V1/releases/download/v1.0.5/OutsideHub-Setup-1.0.5.exe",
         loginUrl: "https://outsidenetworking.com/login",
         notes: "OutsideHub desktop update",
       };
       changed = true;
     }
-    if (db.desktopConfig?.downloadUrl?.includes("OUTSIDEHUB-V1/releases/download/v1/OutsideHub.exe")) {
-      db.desktopConfig.downloadUrl = "https://github.com/rxnxpvp-prog/OUTSIDEHUB-OUTSIDEHUB/releases/download/v1/OutsideHub.exe";
+    if (db.desktopConfig?.downloadUrl?.includes("OutsideHub.exe")) {
+      db.desktopConfig.version = "1.0.5";
+      db.desktopConfig.downloadUrl = "https://github.com/rxnxpvp-prog/OUTSIDEHUB-V1/releases/download/v1.0.5/OutsideHub-Setup-1.0.5.exe";
       changed = true;
     }
     if (changed) writeDB(db);

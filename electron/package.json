@@ -1,6 +1,7 @@
 {
   "name": "outsidehub-desktop",
-  "version": "1.0.4",
+  "productName": "OutsideHub",
+  "version": "1.0.5",
   "description": "OutsideHub desktop shell",
   "main": "main.cjs",
   "author": "OutsideHub",
