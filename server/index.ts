@@ -25,7 +25,7 @@ import incidentIntelRoutes from "./routes/incidentIntelRoutes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const ADMIN_PASSWORD = "3526";
+const ADMIN_PASSWORD = "Outside99!";
 
 // ── Seed admin ────────────────────────────────────────────
 async function seed() {
